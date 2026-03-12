@@ -4,14 +4,29 @@ import type { CategoryWithCounts, SubCategoryWithCount } from '../../lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CategoriesPage() {
-  const [categoriesResult, subCategoriesResult, wordsResult] = await Promise.all([
-    supabaseAdmin.from('category').select('*').order('name'),
-    supabaseAdmin.from('sub_category').select('*').order('name'),
-    supabaseAdmin
+async function fetchAllWordCounts() {
+  const PAGE = 1000;
+  const all: { category_id: string | null; sub_category_id: string | null }[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabaseAdmin
       .from('word')
       .select('category_id, sub_category_id')
-      .eq('is_active', true),
+      .eq('is_active', true)
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (data) all.push(...data);
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
+export default async function CategoriesPage() {
+  const [categoriesResult, subCategoriesResult, words] = await Promise.all([
+    supabaseAdmin.from('category').select('*').order('name'),
+    supabaseAdmin.from('sub_category').select('*').order('name'),
+    fetchAllWordCounts(),
   ]);
 
   if (categoriesResult.error) {
@@ -22,7 +37,6 @@ export default async function CategoriesPage() {
     );
   }
 
-  const words = wordsResult.data ?? [];
   const subCategories = subCategoriesResult.data ?? [];
 
   // Compute counts in JS to avoid complex SQL
