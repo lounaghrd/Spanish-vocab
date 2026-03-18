@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +15,7 @@ import { initDatabase } from '../db/database';
 import { Colors } from '../constants/theme';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { syncLibraryFromSupabase } from '../db/sync';
+import LogoEspanolo from '../assets/logo-espanolo.svg';
 
 // Keep the native splash screen visible while the app loads
 SplashScreen.preventAutoHideAsync();
@@ -59,12 +60,27 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  // Hide splash once both fonts AND sync are ready
+  // Hide native splash as soon as fonts are ready; custom loading screen handles the rest
   useEffect(() => {
-    if ((fontsLoaded || fontError) && syncDone) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, syncDone]);
+  }, [fontsLoaded, fontError]);
+
+  // Still loading fonts — keep native splash visible
+  if (!fontsLoaded && !fontError) return null;
+
+  // Fonts ready but sync in progress — show custom loading screen
+  if (!syncDone) {
+    return (
+      <>
+        <View style={styles.loadingContainer}>
+          <LogoEspanolo width={232} height={51} />
+        </View>
+        <StatusBar style="dark" />
+      </>
+    );
+  }
 
   return (
     <AuthProvider>
@@ -72,6 +88,15 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 /**
  * Separate component so it can call useAuth() inside the navigation context.
@@ -107,7 +132,9 @@ function AuthenticatedLayout() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="library" />
-        <Stack.Screen name="login" options={{ animation: 'fade' }} />
+        <Stack.Screen name="category/[id]" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="login" options={{ animation: 'none' }} />
       </Stack>
       <StatusBar style="dark" />
     </>

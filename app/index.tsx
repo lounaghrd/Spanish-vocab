@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { IconPlus, IconLogOut } from '../components/icons';
+import { IconPlus, IconSettings } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { WordCard } from '../components/WordCard';
 import { WordModal } from '../components/WordModal';
@@ -25,7 +25,7 @@ import LogoEspanolo from '../assets/logo-espanolo.svg';
 
 export default function MyWordsScreen() {
   const router = useRouter();
-  const { userId, logout } = useAuth();
+  const { userId } = useAuth();
   const [words, setWords] = useState<UserWordWithWord[]>([]);
   const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -91,12 +91,12 @@ export default function MyWordsScreen() {
           </Pressable>
           <Pressable
             style={({ pressed }) => [
-              styles.logoutButton,
-              pressed && styles.logoutButtonPressed,
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
             ]}
-            onPress={logout}
+            onPress={() => router.push('/settings')}
           >
-            <IconLogOut size={20} color={Colors.textPrimary} />
+            <IconSettings size={20} color={Colors.textPrimary} />
           </Pressable>
         </View>
       )}
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 28,
   },
-  logoutButton: {
+  settingsButton: {
     width: 44,
     height: 44,
     borderWidth: 2,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.background,
   },
-  logoutButtonPressed: {
+  settingsButtonPressed: {
     backgroundColor: Colors.backgroundSecondary,
   },
   scroll: {

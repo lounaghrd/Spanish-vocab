@@ -87,8 +87,8 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
                 </Text>
                 {isGuessMode && BlurView && (
                   <BlurView
-                    intensity={60}
-                    tint="light"
+                    intensity={80}
+                    tint="dark"
                     style={StyleSheet.absoluteFillObject}
                   />
                 )}

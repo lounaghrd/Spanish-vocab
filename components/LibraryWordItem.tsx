@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
+import {
+  Colors,
+  Spacing,
+  FontFamily,
+  FontSize,
+  LineHeight,
+} from '../constants/theme';
 import type { LibraryWord } from '../db/queries';
 
 type Props = {
@@ -17,8 +23,31 @@ export function LibraryWordItem({ word, onToggle }: Props) {
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
     >
       <View style={styles.textContainer}>
-        <Text style={styles.spanishWord}>{word.spanish_word}</Text>
-        <Text style={styles.englishTranslation}>{word.english_translation}</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.spanishWord} numberOfLines={1}>
+            {word.spanish_word}
+          </Text>
+          <Text style={styles.englishTranslation} numberOfLines={1}>
+            {word.english_translation}
+          </Text>
+        </View>
+        {(word.category_name || word.sub_category_name) && (
+          <View style={styles.metaRow}>
+            {word.category_name && (
+              <Text style={styles.metaText} numberOfLines={1}>
+                {word.category_name}
+              </Text>
+            )}
+            {word.category_name && word.sub_category_name && (
+              <View style={styles.dot} />
+            )}
+            {word.sub_category_name && (
+              <Text style={styles.metaText} numberOfLines={1}>
+                {word.sub_category_name}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
       <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
         {isSelected && <Text style={styles.checkmark}>✓</Text>}
@@ -33,32 +62,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingLeft: Spacing.xxs,
     paddingRight: Spacing.m,
-    paddingVertical: Spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.outlineLight,
-    minHeight: 64,
   },
   rowPressed: {
     backgroundColor: Colors.backgroundSecondary,
   },
   textContainer: {
     flex: 1,
-    gap: 0,
-    paddingBottom: Spacing.xs,
+    marginRight: Spacing.s,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.s,
   },
   spanishWord: {
     fontFamily: FontFamily.loraMedium,
     fontSize: FontSize.body,
     color: Colors.textPrimary,
-    lineHeight: 30,
+    lineHeight: LineHeight.body,
     letterSpacing: 0.2,
+    flexShrink: 1,
   },
   englishTranslation: {
     fontFamily: FontFamily.loraRegular,
     fontSize: FontSize.small,
     color: Colors.textSecondary,
-    lineHeight: 16,
+    lineHeight: LineHeight.small,
+    flexShrink: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  metaText: {
+    fontFamily: FontFamily.loraRegular,
+    fontSize: FontSize.caption,
+    color: Colors.textSecondary,
+    lineHeight: LineHeight.caption,
+  },
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.textSecondary,
   },
   checkbox: {
     width: 25,

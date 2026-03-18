@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { ProgressBar } from './ProgressBar';
 import type { UserWordWithWord } from '../db/queries';
@@ -24,9 +25,14 @@ export function WordCard({ userWord, isDueForReview, onPress }: Props) {
           // Spanish word is hidden — must guess
           <View>
             <View style={styles.blurredContainer}>
-              <Text style={[styles.spanishWord, styles.blurred]}>
+              <Text style={styles.spanishWord}>
                 {userWord.spanish_word}
               </Text>
+              <BlurView
+                intensity={80}
+                tint="dark"
+                style={StyleSheet.absoluteFill}
+              />
             </View>
             <Text style={styles.englishTranslation}>
               {userWord.english_translation}
@@ -71,12 +77,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 28,
   },
-  blurred: {
-    opacity: 0,
-  },
   blurredContainer: {
-    backgroundColor: Colors.textDisabled,
-    borderRadius: 4,
+    position: 'relative',
+    borderRadius: 0,
     overflow: 'hidden',
     alignSelf: 'flex-start',
   },

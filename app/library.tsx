@@ -3,10 +3,9 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   TextInput,
-  SectionList,
+  FlatList,
 } from 'react-native';
 import IllustrationEmpty from '../assets/illustration-empty.svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { IconArrowLeft, IconMagnifier } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { LibraryWordItem } from '../components/LibraryWordItem';
+import { CategoryCard } from '../components/CategoryCard';
 import {
   getLibraryWords,
   getCategories,
@@ -24,48 +24,29 @@ import {
 } from '../db/queries';
 import { useAuth } from '../context/AuthContext';
 
-type SectionData = {
-  title: string;
-  key?: string;
-  data: LibraryWord[];
-};
-
 export default function LibraryScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const [search, setSearch] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [sections, setSections] = useState<SectionData[]>([]);
+  const [searchResults, setSearchResults] = useState<LibraryWord[]>([]);
 
-  const loadData = useCallback(
-    (searchText: string, catId: string | null) => {
-      if (!userId) return;
-      const cats = getCategories();
-      setCategories(cats);
+  const isSearching = search.trim().length > 0;
 
-      const words = getLibraryWords(userId, searchText, catId ?? undefined);
+  const loadData = useCallback(() => {
+    if (!userId) return;
+    const cats = getCategories();
+    setCategories(cats);
 
-      // Group by sub_category_name, then category_name
-      const grouped: Record<string, LibraryWord[]> = {};
-      for (const word of words) {
-        const key = word.sub_category_name ?? word.category_name ?? 'Other';
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(word);
-      }
+    if (isSearching) {
+      const words = getLibraryWords(userId, search);
+      setSearchResults(words);
+    }
+  }, [userId, search, isSearching]);
 
-      const newSections: SectionData[] = Object.entries(grouped).map(
-        ([title, data], i) => ({ title, key: `section-${i}-${title}`, data })
-      );
-      setSections(newSections);
-    },
-    [userId]
-  );
-
-  // Load on mount and when filters or user change
   React.useEffect(() => {
-    loadData(search, selectedCategoryId);
-  }, [search, selectedCategoryId, loadData]);
+    loadData();
+  }, [loadData]);
 
   function handleToggleWord(wordId: string, currentlyInList: boolean) {
     if (!userId) return;
@@ -74,14 +55,15 @@ export default function LibraryScreen() {
     } else {
       addWordToUserList(userId, wordId);
     }
-    loadData(search, selectedCategoryId);
+    loadData();
   }
 
-  function handleCategoryPress(catId: string | null) {
-    setSelectedCategoryId(catId === selectedCategoryId ? null : catId);
+  function handleCategoryPress(category: Category) {
+    router.push({
+      pathname: '/category/[id]',
+      params: { id: category.id, name: category.name },
+    });
   }
-
-  const hasResults = sections.length > 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -96,16 +78,15 @@ export default function LibraryScreen() {
 
       <View style={styles.divider} />
 
-      {/* Search + Category filters */}
-      <View style={styles.filtersContainer}>
-        {/* Search bar */}
+      {/* Search bar */}
+      <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <View style={{ marginRight: Spacing.xs }}>
             <IconMagnifier size={20} color={Colors.textSecondary} />
           </View>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search words..."
+            placeholder="Enter text here"
             placeholderTextColor={Colors.textDisabled}
             value={search}
             onChangeText={setSearch}
@@ -114,63 +95,46 @@ export default function LibraryScreen() {
             clearButtonMode="while-editing"
           />
         </View>
-
-        {/* Category filter pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryPills}
-        >
-          {categories.map((cat) => {
-            const isSelected = cat.id === selectedCategoryId;
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => handleCategoryPress(cat.id)}
-                style={[
-                  styles.pill,
-                  isSelected && styles.pillSelected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    isSelected && styles.pillTextSelected,
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
       </View>
 
-      {/* Word list */}
-      {!hasResults ? (
-        <View style={styles.emptyContainer}>
-          <IllustrationEmpty width={250} height={239} />
-          <Text style={styles.emptyText}>Nothing found</Text>
-          <Text style={styles.emptySubText}>Our operator found no matching words.</Text>
-        </View>
+      {isSearching ? (
+        // Search results mode
+        searchResults.length > 0 ? (
+          <FlatList
+            key="search-list"
+            data={searchResults}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <LibraryWordItem
+                word={item}
+                onToggle={handleToggleWord}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            style={styles.list}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <IllustrationEmpty width={250} height={239} />
+            <Text style={styles.emptyText}>Nothing found</Text>
+            <Text style={styles.emptySubText}>Our operator found no matching words.</Text>
+          </View>
+        )
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
+        // Category grid mode
+        <FlatList
+          key="category-grid"
+          data={categories}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           renderItem={({ item }) => (
-            <LibraryWordItem
-              word={item}
-              onToggle={handleToggleWord}
+            <CategoryCard
+              category={item}
+              onPress={() => handleCategoryPress(item)}
             />
           )}
-          renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
-              <View style={styles.sectionHeaderDivider} />
-            </View>
-          )}
-          stickySectionHeadersEnabled={false}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.gridContent}
           style={styles.list}
         />
       )}
@@ -214,10 +178,9 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.l,
     opacity: 0.3,
   },
-  filtersContainer: {
+  searchContainer: {
     paddingHorizontal: Spacing.l,
-    paddingTop: Spacing.xl,
-    gap: Spacing.s,
+    paddingTop: Spacing.l,
   },
   searchBar: {
     flexDirection: 'row',
@@ -235,54 +198,21 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 24,
   },
-  categoryPills: {
-    flexDirection: 'row',
-    gap: Spacing.s,
-    paddingVertical: Spacing.xs,
-  },
-  pill: {
-    borderWidth: 2,
-    borderColor: Colors.outline,
-    paddingHorizontal: Spacing.m,
-    paddingVertical: Spacing.xs,
-    flexShrink: 0,
-  },
-  pillSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  pillText: {
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-  },
-  pillTextSelected: {
-    color: Colors.textInverted,
-  },
   list: {
     flex: 1,
-    marginTop: Spacing.xl,
+    marginTop: Spacing.l,
   },
   listContent: {
     paddingHorizontal: Spacing.l,
     paddingBottom: Spacing.xxl,
   },
-  sectionHeader: {
-    gap: Spacing.m,
-    paddingBottom: Spacing.s,
-    marginTop: Spacing.m,
+  gridContent: {
+    paddingHorizontal: Spacing.l,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.s,
   },
-  sectionHeaderText: {
-    fontFamily: FontFamily.loraMedium,
-    fontSize: FontSize.bodyLarge,
-    color: Colors.accent,
-    lineHeight: 28,
-  },
-  sectionHeaderDivider: {
-    height: 1,
-    backgroundColor: Colors.accent,
-    opacity: 0.5,
+  gridRow: {
+    gap: Spacing.s,
   },
   emptyContainer: {
     alignItems: 'center',

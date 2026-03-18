@@ -16,6 +16,9 @@ export const Colors = {
   errorBackground: '#F6EDE5',
   errorMain: '#D4183D',
   errorText: '#D4183D',
+  warningBackground: '#FFF7D8',
+  warningMain: '#DFBB28',
+  warningText: '#9C5B00',
 };
 
 export const FontFamily = {
@@ -28,6 +31,7 @@ export const FontSize = {
   heading1: 36,
   heading2: 30,
   heading3: 24,
+  heading4: 20,
   bodyLarge: 18,
   body: 16,
   small: 14,
@@ -38,6 +42,7 @@ export const LineHeight = {
   heading1: 45,
   heading2: 37.5,
   heading3: 30,
+  heading4: 28,
   bodyLarge: 28,
   body: 24,
   small: 16,

@@ -296,12 +296,12 @@ export function getSubCategories(categoryId?: string): SubCategory[] {
   if (categoryId) {
     return db.getAllSync<SubCategory>(
       `SELECT id, name, category_id FROM sub_category
-       WHERE category_id = ? ORDER BY name ASC`,
+       WHERE category_id = ? ORDER BY CASE WHEN name = 'Other' THEN 1 ELSE 0 END, name ASC`,
       [categoryId]
     );
   }
   return db.getAllSync<SubCategory>(
-    `SELECT id, name, category_id FROM sub_category ORDER BY name ASC`
+    `SELECT id, name, category_id FROM sub_category ORDER BY CASE WHEN name = 'Other' THEN 1 ELSE 0 END, name ASC`
   );
 }
 

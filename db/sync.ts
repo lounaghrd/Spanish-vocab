@@ -12,6 +12,27 @@ export type SyncResult = {
 let syncInProgress = false;
 
 /**
+ * Fetch all rows from a Supabase table, paginating in batches of 1000
+ * to work around PostgREST's default row limit.
+ */
+async function fetchAll<T>(table: string, select = '*'): Promise<T[]> {
+  const PAGE = 1000;
+  const all: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(select)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    if (data) all.push(...(data as T[]));
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
+/**
  * Fetches the word library from Supabase and upserts it into local SQLite.
  *
  * Runs on every app startup and every time the app returns to the foreground.
@@ -27,24 +48,20 @@ export async function syncLibraryFromSupabase(): Promise<SyncResult> {
   syncInProgress = true;
 
   try {
-    const [catResult, subcatResult, wordResult] = await Promise.all([
-      supabase.from('category').select('*'),
-      supabase.from('sub_category').select('*'),
-      supabase.from('word').select('*'),
+    const [categories, subCategories, words] = await Promise.all([
+      fetchAll<any>('category'),
+      fetchAll<any>('sub_category'),
+      fetchAll<any>('word'),
     ]);
 
-    if (catResult.error) throw new Error(catResult.error.message);
-    if (subcatResult.error) throw new Error(subcatResult.error.message);
-    if (wordResult.error) throw new Error(wordResult.error.message);
-
     const db = getDb();
-    const supabaseWordIds = new Set(wordResult.data.map((w) => w.id));
+    const supabaseWordIds = new Set(words.map((w: any) => w.id));
 
     db.withTransactionSync(() => {
       // 1. Upsert categories
       // DELETE any stale row with the same name but a different id (old seed data)
       // before upserting, to avoid hitting the UNIQUE(name) constraint.
-      for (const cat of catResult.data) {
+      for (const cat of categories) {
         db.runSync(
           `DELETE FROM category WHERE name = ? AND id != ?`,
           [cat.name, cat.id]
@@ -61,7 +78,7 @@ export async function syncLibraryFromSupabase(): Promise<SyncResult> {
 
       // 2. Upsert sub-categories
       // Same DELETE-before-upsert pattern for UNIQUE(name, category_id).
-      for (const sc of subcatResult.data) {
+      for (const sc of subCategories) {
         db.runSync(
           `DELETE FROM sub_category WHERE name = ? AND category_id = ? AND id != ?`,
           [sc.name, sc.category_id, sc.id]
@@ -77,8 +94,26 @@ export async function syncLibraryFromSupabase(): Promise<SyncResult> {
         );
       }
 
+      // 1b. Remove local categories that no longer exist in Supabase
+      const supabaseCategoryIds = new Set(categories.map((c: any) => c.id));
+      if (supabaseCategoryIds.size > 0) {
+        db.runSync(
+          `DELETE FROM category WHERE id NOT IN (${[...supabaseCategoryIds].map(() => '?').join(',')})`,
+          [...supabaseCategoryIds]
+        );
+      }
+
+      // 2b. Remove local sub-categories that no longer exist in Supabase
+      const supabaseSubCategoryIds = new Set(subCategories.map((sc: any) => sc.id));
+      if (supabaseSubCategoryIds.size > 0) {
+        db.runSync(
+          `DELETE FROM sub_category WHERE id NOT IN (${[...supabaseSubCategoryIds].map(() => '?').join(',')})`,
+          [...supabaseSubCategoryIds]
+        );
+      }
+
       // 3. Upsert words
-      for (const word of wordResult.data) {
+      for (const word of words) {
         db.runSync(
           `INSERT INTO word
              (id, spanish_word, english_translation, type, category_id,
@@ -131,8 +166,8 @@ export async function syncLibraryFromSupabase(): Promise<SyncResult> {
 
     return {
       success: true,
-      categoriesCount: catResult.data.length,
-      wordsCount: wordResult.data.filter((w) => w.is_active).length,
+      categoriesCount: categories.length,
+      wordsCount: words.filter((w: any) => w.is_active).length,
     };
   } catch (error) {
     console.warn('[Sync] Failed to sync library from Supabase:', error);
