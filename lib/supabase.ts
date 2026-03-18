@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Public (read-only) credentials — safe to ship inside the mobile app.
-// Row Level Security policies on Supabase ensure this key can only read data.
 const SUPABASE_URL = 'https://ansrjcvtqalqlatbsdut.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OYfCLe3VI4SA00RGBbfW9A_7VWYKIfO';
+const SUPABASE_ANON_KEY = 'sb_publishable_OYfCLe3VI4SA00RGBbfW9A_7VWYKIfO';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    persistSession: false,
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
     detectSessionInUrl: false,
   },
 });

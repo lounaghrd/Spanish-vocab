@@ -1,15 +1,7 @@
 import { getDb } from './database';
+import { supabase } from '../lib/supabase';
 
 // ---------- TYPES ----------
-
-export type User = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  last_activity: string;
-  created_at: string;
-};
 
 export type Word = {
   id: string;
@@ -33,24 +25,27 @@ export type SubCategory = {
   category_id: string;
 };
 
-export type UserWord = {
+export type UserWordWithWord = {
   id: string;
   word_id: string;
   user_id: string;
   level: number;
   last_reviewed_at: string | null;
   next_review_at: string;
-  suspended: number;
+  suspended: boolean;
   successful_guesses: number;
   failed_guesses: number;
   created_at: string;
+  spanish_word: string;
+  english_translation: string;
+  type: string;
+  category_id: string | null;
+  sub_category_id: string | null;
+  example_sentence: string;
+  is_active: number;
+  category_name: string | null;
+  sub_category_name: string | null;
 };
-
-export type UserWordWithWord = UserWord &
-  Word & {
-    category_name: string | null;
-    sub_category_name: string | null;
-  };
 
 export type LibraryWord = Word & {
   category_name: string | null;
@@ -64,191 +59,193 @@ export type ReviewResult = {
   next_review_at: string;
 };
 
-// ---------- USER WORDS ----------
+// ---------- USER WORDS (Supabase) ----------
 
-export function getMyWords(userId: string): UserWordWithWord[] {
-  const db = getDb();
-  return db.getAllSync<UserWordWithWord>(
-    `SELECT
-      uw.id, uw.word_id, uw.user_id, uw.level, uw.last_reviewed_at,
-      uw.next_review_at, uw.suspended, uw.successful_guesses, uw.failed_guesses,
-      uw.created_at,
-      w.spanish_word, w.english_translation, w.type, w.category_id,
-      w.sub_category_id, w.example_sentence,
-      w.is_active,
-      c.name as category_name,
-      sc.name as sub_category_name
-    FROM user_word uw
-    JOIN word w ON uw.word_id = w.id
-    LEFT JOIN category c ON w.category_id = c.id
-    LEFT JOIN sub_category sc ON w.sub_category_id = sc.id
-    WHERE uw.user_id = ? AND uw.suspended = 0
-    ORDER BY uw.next_review_at ASC`,
-    [userId]
-  );
+export async function getMyWords(userId: string): Promise<UserWordWithWord[]> {
+  const { data, error } = await supabase
+    .from('user_word')
+    .select(`
+      id, word_id, user_id, level, last_reviewed_at, next_review_at,
+      suspended, successful_guesses, failed_guesses, created_at,
+      word:word_id (
+        spanish_word, english_translation, type, category_id,
+        sub_category_id, example_sentence, is_active,
+        category:category_id ( name ),
+        sub_category:sub_category_id ( name )
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('suspended', false)
+    .order('next_review_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    word_id: row.word_id,
+    user_id: row.user_id,
+    level: row.level,
+    last_reviewed_at: row.last_reviewed_at,
+    next_review_at: row.next_review_at,
+    suspended: row.suspended,
+    successful_guesses: row.successful_guesses,
+    failed_guesses: row.failed_guesses,
+    created_at: row.created_at,
+    spanish_word: row.word?.spanish_word ?? '',
+    english_translation: row.word?.english_translation ?? '',
+    type: row.word?.type ?? '',
+    category_id: row.word?.category_id ?? null,
+    sub_category_id: row.word?.sub_category_id ?? null,
+    example_sentence: row.word?.example_sentence ?? '',
+    is_active: row.word?.is_active ?? 1,
+    category_name: row.word?.category?.name ?? null,
+    sub_category_name: row.word?.sub_category?.name ?? null,
+  }));
 }
 
 /**
  * Add a word to the user's learning list.
+ * Uses Supabase upsert with the UNIQUE(user_id, word_id) constraint.
  * - Not yet added → creates a new user_word at level 0, due now.
- * - Previously removed (suspended = true) → re-activates it at level 0.
- * - Already active → no-op, returns existing id.
- * Returns the user_word.id.
+ * - Previously removed (suspended = true) → re-activates it, preserving progress.
+ * - Already active → no-op.
  */
-export function addWordToUserList(userId: string, wordId: string): string {
-  const db = getDb();
-  const existing = db.getFirstSync<{ id: string; suspended: number }>(
-    `SELECT id, suspended FROM user_word WHERE user_id = ? AND word_id = ?`,
-    [userId, wordId]
-  );
+export async function addWordToUserList(userId: string, wordId: string): Promise<void> {
+  // Check if a row already exists
+  const { data: existing } = await supabase
+    .from('user_word')
+    .select('id, suspended')
+    .eq('user_id', userId)
+    .eq('word_id', wordId)
+    .maybeSingle();
 
   if (!existing) {
-    const id = generateId();
-    db.runSync(
-      `INSERT INTO user_word
-       (id, word_id, user_id, level, next_review_at, suspended, successful_guesses, failed_guesses)
-       VALUES (?, ?, ?, 0, datetime('now'), 0, 0, 0)`,
-      [id, wordId, userId]
-    );
-    return id;
-  }
-
-  if (existing.suspended === 1) {
+    // New: insert
+    const { error } = await supabase.from('user_word').insert({
+      word_id: wordId,
+      user_id: userId,
+      level: 0,
+      next_review_at: new Date().toISOString(),
+      suspended: false,
+      successful_guesses: 0,
+      failed_guesses: 0,
+    });
+    if (error) throw new Error(error.message);
+  } else if (existing.suspended) {
     // Re-add: unsuspend only — preserve level and next_review_at
-    db.runSync(
-      `UPDATE user_word
-       SET suspended = 0, updated_at = datetime('now')
-       WHERE id = ?`,
-      [existing.id]
-    );
+    const { error } = await supabase
+      .from('user_word')
+      .update({ suspended: false, updated_at: new Date().toISOString() })
+      .eq('id', existing.id);
+    if (error) throw new Error(error.message);
   }
-
-  return existing.id;
+  // Already active → no-op
 }
 
 /**
  * Remove a word from the user's learning list (soft-delete via suspension).
- * Returns true on success, false if not found or already removed.
  */
-export function removeWordFromUserList(userId: string, wordId: string): boolean {
-  const db = getDb();
-  const existing = db.getFirstSync<{ id: string; suspended: number }>(
-    `SELECT id, suspended FROM user_word WHERE user_id = ? AND word_id = ?`,
-    [userId, wordId]
-  );
-
-  if (!existing || existing.suspended === 1) return false;
-
-  db.runSync(
-    `UPDATE user_word SET suspended = 1, updated_at = datetime('now') WHERE id = ?`,
-    [existing.id]
-  );
-  return true;
-}
-
-/**
- * Get all user_word IDs that are due for review now.
- * Ordered oldest-first so the most overdue words appear first.
- */
-export function getDueUserWords(userId: string): string[] {
-  const db = getDb();
-  const rows = db.getAllSync<{ id: string }>(
-    `SELECT id FROM user_word
-     WHERE user_id = ? AND suspended = 0 AND next_review_at <= datetime('now')
-     ORDER BY next_review_at ASC`,
-    [userId]
-  );
-  return rows.map((r) => r.id);
+export async function removeWordFromUserList(userId: string, wordId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_word')
+    .update({ suspended: true, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('word_id', wordId)
+    .eq('suspended', false);
+  if (error) throw new Error(error.message);
 }
 
 /**
  * Submit a review for a word.
  * Normalizes and compares the guess, stores the review record,
  * and updates the user_word's SRS state.
- * Returns { is_success, level, next_review_at }.
  */
-export function reviewUserWord(
+export async function reviewUserWord(
   userId: string,
   userWordId: string,
   guess: string
-): ReviewResult {
-  const db = getDb();
+): Promise<ReviewResult> {
+  // Fetch user_word + word data
+  const { data: row, error: fetchError } = await supabase
+    .from('user_word')
+    .select(`
+      id, word_id, level, suspended, user_id,
+      successful_guesses, failed_guesses,
+      word:word_id ( spanish_word )
+    `)
+    .eq('id', userWordId)
+    .single();
 
-  const row = db.getFirstSync<{
-    word_id: string;
-    level: number;
-    suspended: number;
-    user_id: string;
-    spanish_word: string;
-  }>(
-    `SELECT uw.word_id, uw.level, uw.suspended, uw.user_id, w.spanish_word
-     FROM user_word uw
-     JOIN word w ON w.id = uw.word_id
-     WHERE uw.id = ?`,
-    [userWordId]
-  );
-
-  if (!row) throw new Error(`user_word not found: ${userWordId}`);
+  if (fetchError || !row) throw new Error(`user_word not found: ${userWordId}`);
   if (row.user_id !== userId) throw new Error('Permission denied');
-  if (row.suspended === 1) throw new Error('Word is suspended');
+  if (row.suspended) throw new Error('Word is suspended');
+
+  const spanishWord = (row as any).word?.spanish_word ?? '';
 
   // Normalize and compare
-  const is_success = normalizeAnswer(guess) === normalizeAnswer(row.spanish_word);
+  const is_success = normalizeAnswer(guess) === normalizeAnswer(spanishWord);
 
   // Compute new SRS state
   const newLevel = computeNewLevel(row.level, is_success);
-  const nextReviewAt = computeNextReviewAt(newLevel);
+  const nextReviewAt = computeNextReviewAtISO(newLevel);
+  const now = new Date().toISOString();
 
   // Insert review record
-  const reviewId = generateId();
-  db.runSync(
-    `INSERT INTO review (id, user_id, word_id, user_word_id, is_success, guess, reviewed_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-    [reviewId, userId, row.word_id, userWordId, is_success ? 1 : 0, guess]
-  );
+  const { error: reviewError } = await supabase.from('review').insert({
+    user_id: userId,
+    word_id: row.word_id,
+    user_word_id: userWordId,
+    is_success,
+    guess,
+    reviewed_at: now,
+  });
+  if (reviewError) throw new Error(reviewError.message);
 
   // Update user_word
-  db.runSync(
-    `UPDATE user_word SET
-      level = ?,
-      last_reviewed_at = datetime('now'),
-      next_review_at = ?,
-      successful_guesses = successful_guesses + ?,
-      failed_guesses = failed_guesses + ?,
-      updated_at = datetime('now')
-    WHERE id = ?`,
-    [newLevel, nextReviewAt, is_success ? 1 : 0, is_success ? 0 : 1, userWordId]
-  );
+  const { error: updateError } = await supabase
+    .from('user_word')
+    .update({
+      level: newLevel,
+      last_reviewed_at: now,
+      next_review_at: nextReviewAt,
+      successful_guesses: (row as any).successful_guesses + (is_success ? 1 : 0),
+      failed_guesses: (row as any).failed_guesses + (is_success ? 0 : 1),
+      updated_at: now,
+    })
+    .eq('id', userWordId);
+  if (updateError) throw new Error(updateError.message);
 
   return { is_success, level: newLevel, next_review_at: nextReviewAt };
 }
 
 /**
- * Check whether a word is in the user's list and its current suspension status.
- * Used by the library screen to decide whether to show Add or Remove.
+ * Fetch the set of word IDs the user has in their list (not suspended).
+ * Used by the library screen to compute the is_in_list flag.
  */
-export function getUserWordByWordId(
-  userId: string,
-  wordId: string
-): { exists: boolean; suspended: boolean } {
-  const db = getDb();
-  const row = db.getFirstSync<{ suspended: number }>(
-    `SELECT suspended FROM user_word WHERE user_id = ? AND word_id = ?`,
-    [userId, wordId]
-  );
-  if (!row) return { exists: false, suspended: false };
-  return { exists: true, suspended: row.suspended === 1 };
+export async function getUserWordIds(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('user_word')
+    .select('word_id')
+    .eq('user_id', userId)
+    .eq('suspended', false);
+
+  if (error) throw new Error(error.message);
+  return new Set((data ?? []).map((row: any) => row.word_id));
 }
 
-// ---------- LIBRARY ----------
+// ---------- LIBRARY (Local SQLite) ----------
 
+/**
+ * Get library words from local SQLite.
+ * The is_in_list flag is computed using the userWordIds set fetched from Supabase.
+ */
 export function getLibraryWords(
-  userId: string,
+  userWordIds: Set<string>,
   searchQuery?: string,
   categoryId?: string
 ): LibraryWord[] {
   const db = getDb();
-  const params: (string | null)[] = [userId];
+  const params: (string | null)[] = [];
   let whereClause = 'WHERE w.is_active = 1';
 
   if (searchQuery && searchQuery.trim().length > 0) {
@@ -265,20 +262,23 @@ export function getLibraryWords(
     params.push(categoryId);
   }
 
-  return db.getAllSync<LibraryWord>(
+  const rows = db.getAllSync<Omit<LibraryWord, 'is_in_list'>>(
     `SELECT
       w.*,
       c.name as category_name,
-      sc.name as sub_category_name,
-      CASE WHEN uw.id IS NOT NULL AND uw.suspended = 0 THEN 1 ELSE 0 END as is_in_list
+      sc.name as sub_category_name
     FROM word w
     LEFT JOIN category c ON w.category_id = c.id
     LEFT JOIN sub_category sc ON w.sub_category_id = sc.id
-    LEFT JOIN user_word uw ON uw.word_id = w.id AND uw.user_id = ?
     ${whereClause}
     ORDER BY sc.name ASC, w.spanish_word ASC`,
     params
   );
+
+  return rows.map((row) => ({
+    ...row,
+    is_in_list: userWordIds.has(row.id) ? 1 : 0,
+  }));
 }
 
 export function getCategories(): Category[] {
@@ -305,60 +305,7 @@ export function getSubCategories(categoryId?: string): SubCategory[] {
   );
 }
 
-// ---------- AUTH ----------
-
-/**
- * Create a new user with an email and hashed password.
- * Throws if the email is already taken (UNIQUE constraint).
- */
-export function createUser(email: string, passwordHash: string): User {
-  const db = getDb();
-  const id = generateId();
-  db.runSync(
-    `INSERT INTO user (id, first_name, last_name, email, password_hash)
-     VALUES (?, ?, ?, ?, ?)`,
-    [id, '', '', email.toLowerCase().trim(), passwordHash]
-  );
-  return getUserById(id)!;
-}
-
-/**
- * Find a user by email (case-insensitive).
- * Returns the row including password_hash for comparison during login.
- */
-export function getUserByEmail(email: string): (User & { password_hash: string }) | null {
-  const db = getDb();
-  return (
-    db.getFirstSync<User & { password_hash: string }>(
-      `SELECT id, first_name, last_name, email, password_hash, last_activity, created_at
-       FROM user WHERE LOWER(email) = LOWER(?)`,
-      [email.trim()]
-    ) ?? null
-  );
-}
-
-/**
- * Fetch a user by ID. Used to restore a persisted session on app start.
- */
-export function getUserById(id: string): User | null {
-  const db = getDb();
-  return (
-    db.getFirstSync<User>(
-      `SELECT id, first_name, last_name, email, last_activity, created_at
-       FROM user WHERE id = ?`,
-      [id]
-    ) ?? null
-  );
-}
-
 // ---------- HELPERS ----------
-
-function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
 
 /**
  * Normalize a string for answer comparison:
@@ -376,18 +323,18 @@ export function normalizeAnswer(text: string): string {
 
 /**
  * Compute new SRS level after a review.
- * Correct: level + 1 (capped at 8). Wrong: reset to 1.
+ * Correct: level + 1 (capped at 8). Wrong: reset to 0.
  */
 export function computeNewLevel(currentLevel: number, isSuccess: boolean): number {
   return isSuccess ? Math.min(currentLevel + 1, 8) : 0;
 }
 
 /**
- * Compute next review timestamp from a level.
+ * Compute next review timestamp as ISO string.
  * Level 8 = learned — no more repetition.
  */
-function computeNextReviewAt(level: number): string {
-  if (level === 8) return '9999-12-31 23:59:59';
+function computeNextReviewAtISO(level: number): string {
+  if (level === 8) return '9999-12-31T23:59:59.000Z';
   const now = new Date();
   const intervals: Record<number, number> = {
     0: 0,       // Now
@@ -401,15 +348,12 @@ function computeNextReviewAt(level: number): string {
   };
   const minutes = intervals[level] ?? 0;
   now.setMinutes(now.getMinutes() + minutes);
-  return now.toISOString().replace('T', ' ').substring(0, 19);
+  return now.toISOString();
 }
 
 export function isWordDueForReview(nextReviewAt: string): boolean {
-  if (nextReviewAt === '9999-12-31 23:59:59') return false;
+  if (nextReviewAt.startsWith('9999')) return false;
   const now = new Date();
-  // Stored timestamps are UTC (from toISOString / SQLite datetime('now')).
-  // Appending 'T' + 'Z' forces JS to parse as UTC rather than local time,
-  // avoiding an offset equal to the device timezone (e.g. UTC+1 in France).
-  const reviewDate = new Date(nextReviewAt.replace(' ', 'T') + 'Z');
+  const reviewDate = new Date(nextReviewAt);
   return now >= reviewDate;
 }

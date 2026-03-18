@@ -1,11 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
-import { createUser, getUserByEmail, getUserById } from '../db/queries';
-
-// ---------- CONSTANTS ----------
-
-const SESSION_KEY = 'auth_user_id';
+import { supabase } from '../lib/supabase';
 
 // ---------- TYPES ----------
 
@@ -16,7 +10,7 @@ interface AuthResult {
 
 interface AuthContextValue {
   userId: string | null;
-  /** True while the app is restoring a persisted session from AsyncStorage on startup. */
+  /** True while the app is restoring a persisted session on startup. */
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (email: string, password: string) => Promise<AuthResult>;
@@ -24,10 +18,6 @@ interface AuthContextValue {
 }
 
 // ---------- HELPERS ----------
-
-async function hashPassword(password: string): Promise<string> {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
-}
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -53,20 +43,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore persisted session on app start
+  // Listen for auth state changes (handles session restore + login/logout)
   useEffect(() => {
-    AsyncStorage.getItem(SESSION_KEY)
-      .then((savedId) => {
-        if (savedId) {
-          // Verify the user still exists in the local DB before trusting the session
-          const user = getUserById(savedId);
-          setUserId(user ? savedId : null);
-        }
-      })
-      .catch(() => {
-        // AsyncStorage read failed — start unauthenticated
-      })
-      .finally(() => setIsLoading(false));
+    // Get the initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+      setIsLoading(false);
+    });
+
+    // Subscribe to future changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUserId(session?.user?.id ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function login(email: string, password: string): Promise<AuthResult> {
@@ -74,14 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!validateEmail(email)) return { success: false, error: 'Please enter a valid email address.' };
     if (!password) return { success: false, error: 'Please enter your password.' };
 
-    const user = getUserByEmail(email);
-    if (!user) return { success: false, error: 'No account found with this email address.' };
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-    const hash = await hashPassword(password);
-    if (hash !== user.password_hash) return { success: false, error: 'Incorrect password.' };
+    if (error) {
+      // Map Supabase error messages to user-friendly ones
+      if (error.message === 'Invalid login credentials') {
+        return { success: false, error: 'Incorrect email or password.' };
+      }
+      return { success: false, error: error.message };
+    }
 
-    await AsyncStorage.setItem(SESSION_KEY, user.id);
-    setUserId(user.id);
     return { success: true };
   }
 
@@ -92,23 +89,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const passwordError = validatePassword(password);
     if (passwordError) return { success: false, error: passwordError };
 
-    const existing = getUserByEmail(email);
-    if (existing) return { success: false, error: 'An account already exists with this email. Please log in.' };
+    const { error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-    try {
-      const hash = await hashPassword(password);
-      const user = createUser(email, hash);
-      await AsyncStorage.setItem(SESSION_KEY, user.id);
-      setUserId(user.id);
-      return { success: true };
-    } catch {
-      return { success: false, error: 'Failed to create account. Please try again.' };
+    if (error) {
+      if (error.message === 'User already registered') {
+        return { success: false, error: 'An account already exists with this email. Please log in.' };
+      }
+      return { success: false, error: error.message };
     }
+
+    return { success: true };
   }
 
   async function logout(): Promise<void> {
-    await AsyncStorage.removeItem(SESSION_KEY);
-    setUserId(null);
+    await supabase.auth.signOut();
   }
 
   return (

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -30,11 +31,18 @@ export default function MyWordsScreen() {
   const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const loadWords = useCallback(() => {
+  const loadWords = useCallback(async () => {
     if (!userId) return;
-    const data = getMyWords(userId);
-    setWords(data);
+    try {
+      const data = await getMyWords(userId);
+      setWords(data);
+    } catch (e) {
+      console.warn('[MyWords] Failed to load:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useFocusEffect(
@@ -43,9 +51,9 @@ export default function MyWordsScreen() {
     }, [loadWords])
   );
 
-  function onRefresh() {
+  async function onRefresh() {
     setRefreshing(true);
-    loadWords();
+    await loadWords();
     setRefreshing(false);
   }
 
@@ -54,15 +62,19 @@ export default function MyWordsScreen() {
     setModalVisible(true);
   }
 
-  function handleCloseModal() {
+  async function handleCloseModal() {
     setModalVisible(false);
     setSelectedWord(null);
-    loadWords(); // Refresh after review
+    await loadWords(); // Refresh after review
   }
 
-  function handleSubmitGuess(userWordId: string, guess: string) {
+  async function handleSubmitGuess(userWordId: string, guess: string) {
     if (!userId) return;
-    reviewUserWord(userId, userWordId, guess);
+    try {
+      await reviewUserWord(userId, userWordId, guess);
+    } catch (e) {
+      console.warn('[MyWords] Review failed:', e);
+    }
   }
 
   const dueNow = words.filter((w) => isWordDueForReview(w.next_review_at));
@@ -72,7 +84,17 @@ export default function MyWordsScreen() {
     ? isWordDueForReview(selectedWord.next_review_at)
     : false;
 
-  const isEmpty = words.length === 0;
+  const isEmpty = words.length === 0 && !loading;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.accent} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -187,6 +209,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     flexDirection: 'row',

@@ -155,13 +155,8 @@ export async function syncLibraryFromSupabase(): Promise<SyncResult> {
         }
       }
 
-      // 5. Suspend user_words whose word is now inactive
-      db.runSync(
-        `UPDATE user_word
-         SET suspended = 1
-         WHERE suspended = 0
-           AND word_id IN (SELECT id FROM word WHERE is_active = 0)`
-      );
+      // Note: user_word suspension for inactive words is now handled
+      // server-side in Supabase (user data no longer in local SQLite).
     });
 
     return {

@@ -30,7 +30,7 @@ export default function LoginScreen() {
   const EMAIL_ERROR_MESSAGES = new Set([
     'Please enter your email address.',
     'Please enter a valid email address.',
-    'No account found with this email address.',
+    'Incorrect email or password.',
     'An account already exists with this email. Please log in.',
   ]);
 

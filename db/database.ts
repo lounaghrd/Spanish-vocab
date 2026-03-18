@@ -53,65 +53,6 @@ export function initDatabase(): void {
     );
   `);
 
-  database.execSync(`
-    CREATE TABLE IF NOT EXISTS user (
-      id TEXT PRIMARY KEY NOT NULL,
-      first_name TEXT NOT NULL,
-      last_name TEXT NOT NULL,
-      email TEXT UNIQUE,
-      password_hash TEXT,
-      last_activity TEXT NOT NULL DEFAULT (datetime('now')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
-
-  database.execSync(`
-    CREATE TABLE IF NOT EXISTS user_word (
-      id TEXT PRIMARY KEY NOT NULL,
-      word_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      level INTEGER NOT NULL DEFAULT 0 CHECK(level >= 0 AND level <= 8),
-      last_reviewed_at TEXT,
-      next_review_at TEXT NOT NULL DEFAULT (datetime('now')),
-      suspended INTEGER NOT NULL DEFAULT 0,
-      successful_guesses INTEGER NOT NULL DEFAULT 0,
-      failed_guesses INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (word_id) REFERENCES word(id),
-      FOREIGN KEY (user_id) REFERENCES user(id)
-    );
-  `);
-
-  database.execSync(`
-    CREATE TABLE IF NOT EXISTS review (
-      id TEXT PRIMARY KEY NOT NULL,
-      user_id TEXT NOT NULL,
-      word_id TEXT NOT NULL,
-      user_word_id TEXT NOT NULL,
-      reviewed_at TEXT NOT NULL DEFAULT (datetime('now')),
-      is_success INTEGER NOT NULL,
-      guess TEXT NOT NULL DEFAULT '',
-      FOREIGN KEY (user_id) REFERENCES user(id),
-      FOREIGN KEY (word_id) REFERENCES word(id),
-      FOREIGN KEY (user_word_id) REFERENCES user_word(id)
-    );
-  `);
-
-  // Idempotent column migrations — run on every startup, fail silently if column already exists.
-  // NOTE: SQLite does not support UNIQUE in ALTER TABLE ADD COLUMN; uniqueness is enforced
-  // at the application layer (signup checks for existing email before inserting).
-  try {
-    database.execSync(`ALTER TABLE review ADD COLUMN guess TEXT NOT NULL DEFAULT ''`);
-  } catch (_) { /* already exists */ }
-  try {
-    database.execSync(`ALTER TABLE user ADD COLUMN email TEXT`);
-  } catch (_) { /* already exists */ }
-  try {
-    database.execSync(`ALTER TABLE user ADD COLUMN password_hash TEXT`);
-  } catch (_) { /* already exists */ }
-
   // Version check: run one-time data migrations
   try {
     const versionRow = database.getFirstSync<{ user_version: number }>('PRAGMA user_version');
@@ -137,13 +78,20 @@ export function initDatabase(): void {
 
     if (currentVersion < 3) {
       // v2→v3: clear local library so Supabase sync can take over
-      // Old seed IDs conflict with Supabase IDs on the UNIQUE(name) constraint
       database.execSync(`DELETE FROM review`);
       database.execSync(`DELETE FROM user_word`);
       database.execSync(`DELETE FROM word`);
       database.execSync(`DELETE FROM sub_category`);
       database.execSync(`DELETE FROM category`);
       database.execSync(`PRAGMA user_version = 3`);
+    }
+
+    if (currentVersion < 4) {
+      // v3→v4: user data moved to Supabase — drop local user tables
+      database.execSync(`DROP TABLE IF EXISTS review`);
+      database.execSync(`DROP TABLE IF EXISTS user_word`);
+      database.execSync(`DROP TABLE IF EXISTS user`);
+      database.execSync(`PRAGMA user_version = 4`);
     }
   } catch (_) {
     // Version check failed — continue normally

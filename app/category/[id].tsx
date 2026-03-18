@@ -23,6 +23,7 @@ import {
 import {
   getLibraryWords,
   getSubCategories,
+  getUserWordIds,
   addWordToUserList,
   removeWordFromUserList,
   type LibraryWord,
@@ -37,15 +38,21 @@ export default function CategoryPage() {
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [words, setWords] = useState<LibraryWord[]>([]);
+  const [userWordIds, setUserWordIds] = useState<Set<string>>(new Set());
 
   const IconComponent = getCategoryIcon(name ?? '', 'emphasized');
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     if (!userId || !id) return;
     const subs = getSubCategories(id);
     setSubCategories(subs);
     setSelectedSubCategoryId(prev => prev === null && subs.length > 0 ? subs[0].id : prev);
-    const allWords = getLibraryWords(userId, undefined, id);
+
+    // Fetch user's word IDs from Supabase for is_in_list flag
+    const wordIds = await getUserWordIds(userId);
+    setUserWordIds(wordIds);
+
+    const allWords = getLibraryWords(wordIds, undefined, id);
     setWords(allWords);
   }, [userId, id]);
 
@@ -60,12 +67,30 @@ export default function CategoryPage() {
 
   function handleToggleWord(wordId: string, currentlyInList: boolean) {
     if (!userId) return;
+
+    // Optimistic update — flip the UI instantly
+    const updatedWordIds = new Set(userWordIds);
     if (currentlyInList) {
-      removeWordFromUserList(userId, wordId);
+      updatedWordIds.delete(wordId);
     } else {
-      addWordToUserList(userId, wordId);
+      updatedWordIds.add(wordId);
     }
-    loadData();
+    setUserWordIds(updatedWordIds);
+    if (id) {
+      setWords(getLibraryWords(updatedWordIds, undefined, id));
+    }
+
+    // Sync with Supabase in the background; revert on failure
+    const syncPromise = currentlyInList
+      ? removeWordFromUserList(userId, wordId)
+      : addWordToUserList(userId, wordId);
+
+    syncPromise.catch(() => {
+      setUserWordIds(userWordIds); // revert
+      if (id) {
+        setWords(getLibraryWords(userWordIds, undefined, id));
+      }
+    });
   }
 
   return (

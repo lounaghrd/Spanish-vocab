@@ -17,6 +17,7 @@ import { CategoryCard } from '../components/CategoryCard';
 import {
   getLibraryWords,
   getCategories,
+  getUserWordIds,
   addWordToUserList,
   removeWordFromUserList,
   type Category,
@@ -30,19 +31,24 @@ export default function LibraryScreen() {
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchResults, setSearchResults] = useState<LibraryWord[]>([]);
+  const [userWordIds, setUserWordIds] = useState<Set<string>>(new Set());
 
   const isSearching = search.trim().length > 0;
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     if (!userId) return;
     const cats = getCategories();
     setCategories(cats);
 
-    if (isSearching) {
-      const words = getLibraryWords(userId, search);
+    // Fetch user's word IDs from Supabase for is_in_list flag
+    const wordIds = await getUserWordIds(userId);
+    setUserWordIds(wordIds);
+
+    if (search.trim().length > 0) {
+      const words = getLibraryWords(wordIds, search);
       setSearchResults(words);
     }
-  }, [userId, search, isSearching]);
+  }, [userId, search]);
 
   React.useEffect(() => {
     loadData();
@@ -50,12 +56,30 @@ export default function LibraryScreen() {
 
   function handleToggleWord(wordId: string, currentlyInList: boolean) {
     if (!userId) return;
+
+    // Optimistic update — flip the UI instantly
+    const updatedWordIds = new Set(userWordIds);
     if (currentlyInList) {
-      removeWordFromUserList(userId, wordId);
+      updatedWordIds.delete(wordId);
     } else {
-      addWordToUserList(userId, wordId);
+      updatedWordIds.add(wordId);
     }
-    loadData();
+    setUserWordIds(updatedWordIds);
+    if (search.trim().length > 0) {
+      setSearchResults(getLibraryWords(updatedWordIds, search));
+    }
+
+    // Sync with Supabase in the background; revert on failure
+    const syncPromise = currentlyInList
+      ? removeWordFromUserList(userId, wordId)
+      : addWordToUserList(userId, wordId);
+
+    syncPromise.catch(() => {
+      setUserWordIds(userWordIds); // revert
+      if (search.trim().length > 0) {
+        setSearchResults(getLibraryWords(userWordIds, search));
+      }
+    });
   }
 
   function handleCategoryPress(category: Category) {
