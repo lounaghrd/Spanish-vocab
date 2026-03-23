@@ -33,6 +33,7 @@ export type UserWordWithWord = {
   last_reviewed_at: string | null;
   next_review_at: string;
   suspended: boolean;
+  marked_as_learned: boolean;
   successful_guesses: number;
   failed_guesses: number;
   created_at: string;
@@ -47,10 +48,20 @@ export type UserWordWithWord = {
   sub_category_name: string | null;
 };
 
+export type WordVariant = 'to_add' | 'in_progress' | 'learned';
+
+export type UserWordInfo = {
+  level: number;
+  suspended: boolean;
+  marked_as_learned: boolean;
+};
+
 export type LibraryWord = Word & {
   category_name: string | null;
   sub_category_name: string | null;
-  is_in_list: number; // 1 if already added by user
+  is_in_list: number; // 1 if not 'to_add'
+  variant: WordVariant;
+  level: number; // SRS level for progress bar
 };
 
 export type ReviewResult = {
@@ -66,7 +77,7 @@ export async function getMyWords(userId: string): Promise<UserWordWithWord[]> {
     .from('user_word')
     .select(`
       id, word_id, user_id, level, last_reviewed_at, next_review_at,
-      suspended, successful_guesses, failed_guesses, created_at,
+      suspended, marked_as_learned, successful_guesses, failed_guesses, created_at,
       word:word_id (
         spanish_word, english_translation, type, category_id,
         sub_category_id, example_sentence, is_active,
@@ -76,6 +87,7 @@ export async function getMyWords(userId: string): Promise<UserWordWithWord[]> {
     `)
     .eq('user_id', userId)
     .eq('suspended', false)
+    .eq('marked_as_learned', false)
     .order('next_review_at', { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -88,6 +100,7 @@ export async function getMyWords(userId: string): Promise<UserWordWithWord[]> {
     last_reviewed_at: row.last_reviewed_at,
     next_review_at: row.next_review_at,
     suspended: row.suspended,
+    marked_as_learned: row.marked_as_learned,
     successful_guesses: row.successful_guesses,
     failed_guesses: row.failed_guesses,
     created_at: row.created_at,
@@ -132,10 +145,10 @@ export async function addWordToUserList(userId: string, wordId: string): Promise
     });
     if (error) throw new Error(error.message);
   } else if (existing.suspended) {
-    // Re-add: unsuspend only — preserve level and next_review_at
+    // Re-add: unsuspend and clear marked_as_learned — preserve level and next_review_at
     const { error } = await supabase
       .from('user_word')
-      .update({ suspended: false, updated_at: new Date().toISOString() })
+      .update({ suspended: false, marked_as_learned: false, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
     if (error) throw new Error(error.message);
   }
@@ -144,15 +157,56 @@ export async function addWordToUserList(userId: string, wordId: string): Promise
 
 /**
  * Remove a word from the user's learning list (soft-delete via suspension).
+ * Also clears marked_as_learned (covers "Learned → To add" transition).
  */
 export async function removeWordFromUserList(userId: string, wordId: string): Promise<void> {
   const { error } = await supabase
     .from('user_word')
-    .update({ suspended: true, updated_at: new Date().toISOString() })
+    .update({
+      suspended: true,
+      marked_as_learned: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('word_id', wordId);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Mark a word as learned (user already knows it, skip SRS).
+ * Uses upsert pattern: insert if new, update if existing.
+ */
+export async function markWordAsLearned(userId: string, wordId: string): Promise<void> {
+  const { data: existing } = await supabase
+    .from('user_word')
+    .select('id')
     .eq('user_id', userId)
     .eq('word_id', wordId)
-    .eq('suspended', false);
-  if (error) throw new Error(error.message);
+    .maybeSingle();
+
+  if (!existing) {
+    const { error } = await supabase.from('user_word').insert({
+      word_id: wordId,
+      user_id: userId,
+      level: 0,
+      next_review_at: '9999-12-31T23:59:59.000Z',
+      suspended: false,
+      marked_as_learned: true,
+      successful_guesses: 0,
+      failed_guesses: 0,
+    });
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase
+      .from('user_word')
+      .update({
+        suspended: false,
+        marked_as_learned: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id);
+    if (error) throw new Error(error.message);
+  }
 }
 
 /**
@@ -219,28 +273,35 @@ export async function reviewUserWord(
 }
 
 /**
- * Fetch the set of word IDs the user has in their list (not suspended).
- * Used by the library screen to compute the is_in_list flag.
+ * Fetch per-word metadata for all of the user's words (including suspended).
+ * Used by the library screen to compute the card variant.
  */
-export async function getUserWordIds(userId: string): Promise<Set<string>> {
+export async function getUserWordMap(userId: string): Promise<Map<string, UserWordInfo>> {
   const { data, error } = await supabase
     .from('user_word')
-    .select('word_id')
-    .eq('user_id', userId)
-    .eq('suspended', false);
+    .select('word_id, level, suspended, marked_as_learned')
+    .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
-  return new Set((data ?? []).map((row: any) => row.word_id));
+  const map = new Map<string, UserWordInfo>();
+  for (const row of data ?? []) {
+    map.set(row.word_id, {
+      level: row.level,
+      suspended: row.suspended,
+      marked_as_learned: row.marked_as_learned,
+    });
+  }
+  return map;
 }
 
 // ---------- LIBRARY (Local SQLite) ----------
 
 /**
  * Get library words from local SQLite.
- * The is_in_list flag is computed using the userWordIds set fetched from Supabase.
+ * Variant and level are computed using the userWordMap fetched from Supabase.
  */
 export function getLibraryWords(
-  userWordIds: Set<string>,
+  userWordMap: Map<string, UserWordInfo>,
   searchQuery?: string,
   categoryId?: string
 ): LibraryWord[] {
@@ -275,10 +336,31 @@ export function getLibraryWords(
     params
   );
 
-  return rows.map((row) => ({
-    ...row,
-    is_in_list: userWordIds.has(row.id) ? 1 : 0,
-  }));
+  return rows.map((row) => {
+    const info = userWordMap.get(row.id);
+    let variant: WordVariant = 'to_add';
+    let level = 0;
+
+    if (info) {
+      if (info.suspended) {
+        variant = 'to_add';
+      } else if (info.marked_as_learned) {
+        variant = 'learned';
+      } else if (info.level === 8) {
+        variant = 'learned';
+      } else {
+        variant = 'in_progress';
+      }
+      level = info.level;
+    }
+
+    return {
+      ...row,
+      is_in_list: variant !== 'to_add' ? 1 : 0,
+      variant,
+      level,
+    };
+  });
 }
 
 export function getCategories(): Category[] {

@@ -43,6 +43,7 @@ CREATE TABLE public.user_word (
   last_reviewed_at TIMESTAMPTZ,
   next_review_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   suspended BOOLEAN NOT NULL DEFAULT false,
+  marked_as_learned BOOLEAN NOT NULL DEFAULT false,
   successful_guesses INTEGER NOT NULL DEFAULT 0,
   failed_guesses INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

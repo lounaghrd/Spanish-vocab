@@ -96,6 +96,59 @@ export function IconSettings({ size = 24, color = '#191919' }: IconProps) {
   );
 }
 
+// ─── Cycle (↺) ────────────────────────────────────────────────────────────
+// Figma node 527:2923 — two curved arrows forming a circular refresh symbol
+export function IconCycle({ size = 24, color = '#191919' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+      <Path
+        d="M3.75 9C3.75 6.1 6.1 3.75 9 3.75C10.95 3.75 12.65 4.82 13.5 6.38"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+      <Path
+        d="M13.5 3.75V6.75H10.5"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+      <Path
+        d="M14.25 9C14.25 11.9 11.9 14.25 9 14.25C7.05 14.25 5.35 13.18 4.5 11.62"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+      <Path
+        d="M4.5 14.25V11.25H7.5"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+    </Svg>
+  );
+}
+
+// ─── Check (✓) ────────────────────────────────────────────────────────────
+// Figma node 527:2250 — a checkmark / tick mark
+export function IconCheck({ size = 24, color = '#191919' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+      <Path
+        d="M3.75 9.75L7.5 13.5L14.25 4.5"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+    </Svg>
+  );
+}
+
 // ─── Magnifier (Q) ─────────────────────────────────────────────────────────
 // Figma: "icon=magnifier, weight=thin" — circle lens + diagonal handle
 export function IconMagnifier({ size = 24, color = '#191919' }: IconProps) {
