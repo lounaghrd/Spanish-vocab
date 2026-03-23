@@ -76,7 +76,8 @@ export default function CategoryPage() {
   function handleStartLearning(wordId: string) {
     if (!userId) return;
     const updated = new Map(userWordMap);
-    updated.set(wordId, { level: 0, suspended: false, marked_as_learned: false });
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: false });
     setUserWordMap(updated);
     refreshWords(updated);
 
@@ -89,7 +90,8 @@ export default function CategoryPage() {
   function handleMarkAsLearned(wordId: string) {
     if (!userId) return;
     const updated = new Map(userWordMap);
-    updated.set(wordId, { level: 0, suspended: false, marked_as_learned: true });
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: true });
     setUserWordMap(updated);
     refreshWords(updated);
 
