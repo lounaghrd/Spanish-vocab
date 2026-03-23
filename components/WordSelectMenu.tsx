@@ -73,7 +73,7 @@ export function WordSelectMenu({
             }}
           >
             <IconCycle size={18} color={Colors.textPrimary} />
-            <Text style={styles.menuText}>Start learning</Text>
+            <Text style={styles.menuText}>Learn word</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [
