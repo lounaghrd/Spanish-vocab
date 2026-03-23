@@ -78,7 +78,7 @@ export default function MyWordsScreen() {
   }
 
   const dueNow = words.filter((w) => isWordDueForReview(w.next_review_at));
-  const dueLater = words.filter((w) => !isWordDueForReview(w.next_review_at));
+  const dueLater = words.filter((w) => !isWordDueForReview(w.next_review_at) && w.level < 8);
 
   const selectedIsDue = selectedWord
     ? isWordDueForReview(selectedWord.next_review_at)
