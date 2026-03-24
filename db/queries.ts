@@ -127,7 +127,7 @@ export async function addWordToUserList(userId: string, wordId: string): Promise
   // Check if a row already exists
   const { data: existing } = await supabase
     .from('user_word')
-    .select('id, suspended, next_review_at')
+    .select('id, suspended, next_review_at, marked_as_learned')
     .eq('user_id', userId)
     .eq('word_id', wordId)
     .maybeSingle();
@@ -146,8 +146,8 @@ export async function addWordToUserList(userId: string, wordId: string): Promise
     if (error) throw new Error(error.message);
   } else if (existing.suspended) {
     // Re-add: unsuspend and clear marked_as_learned.
-    // Reset next_review_at if it has the "learned" sentinel (from a previous mark-as-learned).
-    const needsReviewReset = existing.next_review_at?.startsWith('9999');
+    // Only reset if the "learned" sentinel came from mark-as-learned, not SRS-earned level 8.
+    const needsReviewReset = existing.next_review_at?.startsWith('9999') && existing.marked_as_learned;
     const { error } = await supabase
       .from('user_word')
       .update({
@@ -171,7 +171,6 @@ export async function removeWordFromUserList(userId: string, wordId: string): Pr
     .from('user_word')
     .update({
       suspended: true,
-      marked_as_learned: false,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
