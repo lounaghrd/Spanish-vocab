@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { IconPlus, IconSettings } from '../components/icons';
+import { IconPlusThin, IconSettings } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { WordCard } from '../components/WordCard';
 import { WordModal } from '../components/WordModal';
@@ -78,7 +78,7 @@ export default function MyWordsScreen() {
   }
 
   const dueNow = words.filter((w) => isWordDueForReview(w.next_review_at));
-  const dueLater = words.filter((w) => !isWordDueForReview(w.next_review_at));
+  const dueLater = words.filter((w) => !isWordDueForReview(w.next_review_at) && w.level < 8);
 
   const selectedIsDue = selectedWord
     ? isWordDueForReview(selectedWord.next_review_at)
@@ -108,7 +108,7 @@ export default function MyWordsScreen() {
             ]}
             onPress={() => router.push('/library')}
           >
-            <IconPlus size={20} color={Colors.textPrimary} />
+            <IconPlusThin size={26} color={Colors.textPrimary} />
             <Text style={styles.addButtonText}>Add new word</Text>
           </Pressable>
           <Pressable
@@ -135,7 +135,7 @@ export default function MyWordsScreen() {
               ]}
               onPress={() => router.push('/library')}
             >
-              <IconPlus size={20} color={Colors.textInverted} />
+              <IconPlusThin size={26} color={Colors.textInverted} />
               <Text style={styles.emptyAddButtonText}>Add new words</Text>
             </Pressable>
           </View>

@@ -23,11 +23,13 @@ import {
 import {
   getLibraryWords,
   getSubCategories,
-  getUserWordIds,
+  getUserWordMap,
   addWordToUserList,
   removeWordFromUserList,
+  markWordAsLearned,
   type LibraryWord,
   type SubCategory,
+  type UserWordInfo,
 } from '../../db/queries';
 import { useAuth } from '../../context/AuthContext';
 
@@ -38,7 +40,7 @@ export default function CategoryPage() {
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [words, setWords] = useState<LibraryWord[]>([]);
-  const [userWordIds, setUserWordIds] = useState<Set<string>>(new Set());
+  const [userWordMap, setUserWordMap] = useState<Map<string, UserWordInfo>>(new Map());
 
   const IconComponent = getCategoryIcon(name ?? '', 'emphasized');
 
@@ -48,11 +50,11 @@ export default function CategoryPage() {
     setSubCategories(subs);
     setSelectedSubCategoryId(prev => prev === null && subs.length > 0 ? subs[0].id : prev);
 
-    // Fetch user's word IDs from Supabase for is_in_list flag
-    const wordIds = await getUserWordIds(userId);
-    setUserWordIds(wordIds);
+    // Fetch user's word map from Supabase for variant computation
+    const wordMap = await getUserWordMap(userId);
+    setUserWordMap(wordMap);
 
-    const allWords = getLibraryWords(wordIds, undefined, id);
+    const allWords = getLibraryWords(wordMap, undefined, id);
     setWords(allWords);
   }, [userId, id]);
 
@@ -65,31 +67,53 @@ export default function CategoryPage() {
     return words.filter((w) => w.sub_category_id === selectedSubCategoryId);
   }, [words, selectedSubCategoryId]);
 
-  function handleToggleWord(wordId: string, currentlyInList: boolean) {
-    if (!userId) return;
-
-    // Optimistic update — flip the UI instantly
-    const updatedWordIds = new Set(userWordIds);
-    if (currentlyInList) {
-      updatedWordIds.delete(wordId);
-    } else {
-      updatedWordIds.add(wordId);
-    }
-    setUserWordIds(updatedWordIds);
+  function refreshWords(map: Map<string, UserWordInfo>) {
     if (id) {
-      setWords(getLibraryWords(updatedWordIds, undefined, id));
+      setWords(getLibraryWords(map, undefined, id));
     }
+  }
 
-    // Sync with Supabase in the background; revert on failure
-    const syncPromise = currentlyInList
-      ? removeWordFromUserList(userId, wordId)
-      : addWordToUserList(userId, wordId);
+  function handleStartLearning(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: false });
+    setUserWordMap(updated);
+    refreshWords(updated);
 
-    syncPromise.catch(() => {
-      setUserWordIds(userWordIds); // revert
-      if (id) {
-        setWords(getLibraryWords(userWordIds, undefined, id));
-      }
+    addWordToUserList(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshWords(userWordMap);
+    });
+  }
+
+  function handleMarkAsLearned(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: true });
+    setUserWordMap(updated);
+    refreshWords(updated);
+
+    markWordAsLearned(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshWords(userWordMap);
+    });
+  }
+
+  function handleRemoveWord(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    if (existing) {
+      updated.set(wordId, { ...existing, suspended: true, marked_as_learned: false });
+    }
+    setUserWordMap(updated);
+    refreshWords(updated);
+
+    removeWordFromUserList(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshWords(userWordMap);
     });
   }
 
@@ -138,7 +162,12 @@ export default function CategoryPage() {
         data={filteredWords}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <LibraryWordItem word={item} onToggle={handleToggleWord} />
+          <LibraryWordItem
+            word={item}
+            onStartLearning={handleStartLearning}
+            onMarkAsLearned={handleMarkAsLearned}
+            onRemoveWord={handleRemoveWord}
+          />
         )}
         contentContainerStyle={styles.listContent}
         style={styles.list}

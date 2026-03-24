@@ -17,11 +17,13 @@ import { CategoryCard } from '../components/CategoryCard';
 import {
   getLibraryWords,
   getCategories,
-  getUserWordIds,
+  getUserWordMap,
   addWordToUserList,
   removeWordFromUserList,
+  markWordAsLearned,
   type Category,
   type LibraryWord,
+  type UserWordInfo,
 } from '../db/queries';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,7 +33,7 @@ export default function LibraryScreen() {
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchResults, setSearchResults] = useState<LibraryWord[]>([]);
-  const [userWordIds, setUserWordIds] = useState<Set<string>>(new Set());
+  const [userWordMap, setUserWordMap] = useState<Map<string, UserWordInfo>>(new Map());
 
   const isSearching = search.trim().length > 0;
 
@@ -40,12 +42,12 @@ export default function LibraryScreen() {
     const cats = getCategories();
     setCategories(cats);
 
-    // Fetch user's word IDs from Supabase for is_in_list flag
-    const wordIds = await getUserWordIds(userId);
-    setUserWordIds(wordIds);
+    // Fetch user's word map from Supabase for variant computation
+    const wordMap = await getUserWordMap(userId);
+    setUserWordMap(wordMap);
 
     if (search.trim().length > 0) {
-      const words = getLibraryWords(wordIds, search);
+      const words = getLibraryWords(wordMap, search);
       setSearchResults(words);
     }
   }, [userId, search]);
@@ -54,31 +56,53 @@ export default function LibraryScreen() {
     loadData();
   }, [loadData]);
 
-  function handleToggleWord(wordId: string, currentlyInList: boolean) {
-    if (!userId) return;
-
-    // Optimistic update — flip the UI instantly
-    const updatedWordIds = new Set(userWordIds);
-    if (currentlyInList) {
-      updatedWordIds.delete(wordId);
-    } else {
-      updatedWordIds.add(wordId);
-    }
-    setUserWordIds(updatedWordIds);
+  function refreshSearchResults(map: Map<string, UserWordInfo>) {
     if (search.trim().length > 0) {
-      setSearchResults(getLibraryWords(updatedWordIds, search));
+      setSearchResults(getLibraryWords(map, search));
     }
+  }
 
-    // Sync with Supabase in the background; revert on failure
-    const syncPromise = currentlyInList
-      ? removeWordFromUserList(userId, wordId)
-      : addWordToUserList(userId, wordId);
+  function handleStartLearning(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: false });
+    setUserWordMap(updated);
+    refreshSearchResults(updated);
 
-    syncPromise.catch(() => {
-      setUserWordIds(userWordIds); // revert
-      if (search.trim().length > 0) {
-        setSearchResults(getLibraryWords(userWordIds, search));
-      }
+    addWordToUserList(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshSearchResults(userWordMap);
+    });
+  }
+
+  function handleMarkAsLearned(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: true });
+    setUserWordMap(updated);
+    refreshSearchResults(updated);
+
+    markWordAsLearned(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshSearchResults(userWordMap);
+    });
+  }
+
+  function handleRemoveWord(wordId: string) {
+    if (!userId) return;
+    const updated = new Map(userWordMap);
+    const existing = updated.get(wordId);
+    if (existing) {
+      updated.set(wordId, { ...existing, suspended: true, marked_as_learned: false });
+    }
+    setUserWordMap(updated);
+    refreshSearchResults(updated);
+
+    removeWordFromUserList(userId, wordId).catch(() => {
+      setUserWordMap(userWordMap);
+      refreshSearchResults(userWordMap);
     });
   }
 
@@ -131,7 +155,9 @@ export default function LibraryScreen() {
             renderItem={({ item }) => (
               <LibraryWordItem
                 word={item}
-                onToggle={handleToggleWord}
+                onStartLearning={handleStartLearning}
+                onMarkAsLearned={handleMarkAsLearned}
+                onRemoveWord={handleRemoveWord}
               />
             )}
             contentContainerStyle={styles.listContent}

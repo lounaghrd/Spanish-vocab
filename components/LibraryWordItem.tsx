@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import {
   Colors,
@@ -7,53 +7,100 @@ import {
   FontSize,
   LineHeight,
 } from '../constants/theme';
+import { ProgressBar } from './ProgressBar';
+import { WordSelectMenu } from './WordSelectMenu';
+import { IconPlus, IconCycle, IconCheck } from './icons';
 import type { LibraryWord } from '../db/queries';
 
 type Props = {
   word: LibraryWord;
-  onToggle: (wordId: string, currentlyInList: boolean) => void;
+  onStartLearning: (wordId: string) => void;
+  onMarkAsLearned: (wordId: string) => void;
+  onRemoveWord: (wordId: string) => void;
 };
 
-export function LibraryWordItem({ word, onToggle }: Props) {
-  const isSelected = word.is_in_list === 1;
+export function LibraryWordItem({
+  word,
+  onStartLearning,
+  onMarkAsLearned,
+  onRemoveWord,
+}: Props) {
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const buttonRef = useRef<View>(null);
+
+  function handlePlusPress() {
+    buttonRef.current?.measureInWindow((x, y, width, height) => {
+      setAnchorPosition({ x, y, width, height });
+      setMenuVisible(true);
+    });
+  }
 
   return (
-    <Pressable
-      onPress={() => onToggle(word.id, isSelected)}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-    >
+    <View style={styles.row}>
+      {/* Text content */}
       <View style={styles.textContainer}>
-        <View style={styles.topRow}>
-          <Text style={styles.spanishWord} numberOfLines={1}>
-            {word.spanish_word}
-          </Text>
-          <Text style={styles.englishTranslation} numberOfLines={1}>
-            {word.english_translation}
-          </Text>
+        <Text style={styles.spanishWord} numberOfLines={1}>
+          {word.spanish_word}
+        </Text>
+        <Text style={styles.englishTranslation} numberOfLines={1}>
+          {word.english_translation}
+        </Text>
+      </View>
+
+      {/* Right side: variant-specific actions */}
+      {word.variant === 'to_add' && (
+        <>
+          <Pressable
+            ref={buttonRef}
+            onPress={handlePlusPress}
+            style={({ pressed }) => [
+              styles.actionButton,
+              styles.actionButtonOutlined,
+              pressed && styles.actionButtonPressed,
+            ]}
+          >
+            <IconPlus size={12} color={Colors.outline} />
+          </Pressable>
+          <WordSelectMenu
+            visible={menuVisible}
+            anchorPosition={anchorPosition}
+            onStartLearning={() => onStartLearning(word.id)}
+            onMarkAsLearned={() => onMarkAsLearned(word.id)}
+            onClose={() => setMenuVisible(false)}
+          />
+        </>
+      )}
+
+      {word.variant === 'in_progress' && (
+        <View style={styles.inProgressRight}>
+          <ProgressBar level={word.level} />
+          <Pressable
+            onPress={() => onRemoveWord(word.id)}
+            style={({ pressed }) => [
+              styles.actionButton,
+              styles.actionButtonAccent,
+              pressed && styles.actionButtonAccentPressed,
+            ]}
+          >
+            <IconCycle size={15} color={Colors.textInverted} />
+          </Pressable>
         </View>
-        {(word.category_name || word.sub_category_name) && (
-          <View style={styles.metaRow}>
-            {word.category_name && (
-              <Text style={styles.metaText} numberOfLines={1}>
-                {word.category_name}
-              </Text>
-            )}
-            {word.category_name && word.sub_category_name && (
-              <View style={styles.dot} />
-            )}
-            {word.sub_category_name && (
-              <Text style={styles.metaText} numberOfLines={1}>
-                {word.sub_category_name}
-              </Text>
-            )}
-          </View>
-        )}
-      </View>
-      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-        {isSelected && <Text style={styles.checkmark}>✓</Text>}
-        {!isSelected && <Text style={styles.plusSign}>+</Text>}
-      </View>
-    </Pressable>
+      )}
+
+      {word.variant === 'learned' && (
+        <Pressable
+          onPress={() => onRemoveWord(word.id)}
+          style={({ pressed }) => [
+            styles.actionButton,
+            styles.actionButtonLearned,
+            pressed && styles.actionButtonLearnedPressed,
+          ]}
+        >
+          <IconCheck size={15} color={Colors.textInverted} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -68,17 +115,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.outlineLight,
   },
-  rowPressed: {
-    backgroundColor: Colors.backgroundSecondary,
-  },
   textContainer: {
     flex: 1,
     marginRight: Spacing.s,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.s,
+    gap: Spacing.xxs,
   },
   spanishWord: {
     fontFamily: FontFamily.loraMedium,
@@ -86,55 +126,46 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: LineHeight.body,
     letterSpacing: 0.2,
-    flexShrink: 1,
   },
   englishTranslation: {
     fontFamily: FontFamily.loraRegular,
     fontSize: FontSize.small,
     color: Colors.textSecondary,
     lineHeight: LineHeight.small,
-    flexShrink: 1,
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  metaText: {
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.caption,
-    color: Colors.textSecondary,
-    lineHeight: LineHeight.caption,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: Colors.textSecondary,
-  },
-  checkbox: {
+  // Action buttons (25x25 rounded square)
+  actionButton: {
     width: 25,
     height: 25,
     borderRadius: 4,
-    borderWidth: 2,
-    borderColor: Colors.outline,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  checkboxSelected: {
+  actionButtonOutlined: {
+    borderWidth: 2,
+    borderColor: Colors.outline,
+  },
+  actionButtonPressed: {
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  actionButtonAccent: {
     backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
   },
-  checkmark: {
-    color: Colors.textInverted,
-    fontSize: 14,
-    fontWeight: '700',
+  actionButtonAccentPressed: {
+    backgroundColor: Colors.accentHover,
   },
-  plusSign: {
-    color: Colors.outline,
-    fontSize: 16,
-    fontWeight: '300',
-    lineHeight: 20,
+  actionButtonLearned: {
+    backgroundColor: Colors.successMain,
+  },
+  actionButtonLearnedPressed: {
+    backgroundColor: '#2E9E0F',
+  },
+  // In progress: progress bar + cycle button
+  inProgressRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.m,
+    flexShrink: 0,
   },
 });
