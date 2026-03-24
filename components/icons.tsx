@@ -23,6 +23,19 @@ export function IconPlus({ size = 12, color = '#191919' }: IconProps) {
   );
 }
 
+// ─── Plus Thin (CTA) ────────────────────────────────────────────────────────
+// Figma: thinner filled plus for "Add new word" CTA buttons
+export function IconPlusThin({ size = 26, color = '#191919' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
+      <Path
+        d="M12.133 13.8664H4.04443V12.133H12.133V4.04443H13.8664V12.133H21.9558V13.8664H13.8664V21.9558H12.133V13.8664Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 // ─── Close (×) ─────────────────────────────────────────────────────────────
 // Figma: "icon=close, weight=thin" — a plus (+) rotated 45° = two diagonal lines
 export function IconClose({ size = 24, color = '#191919' }: IconProps) {
