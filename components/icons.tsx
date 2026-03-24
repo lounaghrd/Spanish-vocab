@@ -11,15 +11,13 @@ const LC = 'round' as const;
 const LJ = 'round' as const;
 
 // ─── Plus (+) ──────────────────────────────────────────────────────────────
-// Figma: "icon=plus, weight=thin" — two perpendicular lines
-export function IconPlus({ size = 24, color = '#191919' }: IconProps) {
+// Figma: solid filled plus icon
+export function IconPlus({ size = 12, color = '#191919' }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 12 12" fill="none">
       <Path
-        d="M12 5V19M5 12H19"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
+        d="M4.86111 6.80556H0V4.86111H4.86111V0H6.80556V4.86111H11.6667V6.80556H6.80556V11.6667H4.86111V6.80556Z"
+        fill={color}
       />
     </Svg>
   );

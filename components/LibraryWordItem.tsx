@@ -60,7 +60,7 @@ export function LibraryWordItem({
               pressed && styles.actionButtonPressed,
             ]}
           >
-            <IconPlus size={14} color={Colors.outline} />
+            <IconPlus size={12} color={Colors.outline} />
           </Pressable>
           <WordSelectMenu
             visible={menuVisible}
