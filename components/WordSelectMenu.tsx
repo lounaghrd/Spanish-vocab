@@ -48,7 +48,7 @@ export function WordSelectMenu({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>

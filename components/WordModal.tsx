@@ -60,7 +60,7 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       {/* KeyboardAvoidingView fills the screen so the card shifts up when keyboard appears */}
