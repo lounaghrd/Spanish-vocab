@@ -59,3 +59,38 @@ export type CategoryWithCounts = Category & {
 export type SubCategoryWithCount = SubCategory & {
   word_count: number;
 };
+
+export type UserListItem = {
+  id: string;
+  email: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  last_activity: string | null;
+};
+
+export type UserWordWithDetails = {
+  id: string;
+  word_id: string;
+  user_id: string;
+  level: number;
+  last_reviewed_at: string | null;
+  next_review_at: string;
+  suspended: boolean;
+  marked_as_learned: boolean;
+  successful_guesses: number;
+  failed_guesses: number;
+  created_at: string;
+  updated_at: string;
+  spanish_word: string;
+  english_translation: string;
+};
+
+export type UserDetail = {
+  id: string;
+  email: string;
+  created_at: string;
+  first_name: string;
+  last_name: string;
+  last_activity: string | null;
+};
