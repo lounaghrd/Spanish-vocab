@@ -63,15 +63,17 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
       animationType="none"
       onRequestClose={onClose}
     >
+      {/* Full-screen backdrop — always covers entire screen, even behind keyboard */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
+
       {/* KeyboardAvoidingView fills the screen so the card shifts up when keyboard appears */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
+        pointerEvents="box-none"
       >
-        {/* Overlay: centers the card, provides the dim backdrop */}
-        <View style={styles.overlay}>
-          {/* Backdrop — tap to close */}
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+        {/* Overlay: centers the card */}
+        <View style={styles.overlay} pointerEvents="box-none">
 
           {/* Card — absorbs its own touches so the backdrop doesn't fire */}
           <View
@@ -192,12 +194,15 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
   keyboardAvoid: {
     flex: 1,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.l,
