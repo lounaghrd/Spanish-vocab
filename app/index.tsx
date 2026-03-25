@@ -14,8 +14,10 @@ import { IconPlusThin, IconSettings } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { WordCard } from '../components/WordCard';
 import { WordModal } from '../components/WordModal';
+import { BottomStatusBar } from '../components/BottomStatusBar';
 import {
   getMyWords,
+  getWordCounts,
   reviewUserWord,
   isWordDueForReview,
   type UserWordWithWord,
@@ -28,6 +30,7 @@ export default function MyWordsScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const [words, setWords] = useState<UserWordWithWord[]>([]);
+  const [wordCounts, setWordCounts] = useState<{ learned: number; learning: number } | null>(null);
   const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,10 +42,15 @@ export default function MyWordsScreen() {
       const data = await getMyWords(userId);
       setWords(data);
     } catch (e) {
-      console.warn('[MyWords] Failed to load:', e);
-    } finally {
-      setLoading(false);
+      console.warn('[MyWords] Failed to load words:', e);
     }
+    try {
+      const counts = await getWordCounts(userId);
+      setWordCounts(counts);
+    } catch (e) {
+      console.warn('[MyWords] Failed to load counts:', e);
+    }
+    setLoading(false);
   }, [userId]);
 
   useFocusEffect(
@@ -85,6 +93,7 @@ export default function MyWordsScreen() {
     : false;
 
   const isEmpty = words.length === 0 && !loading;
+  const showStatusBar = wordCounts !== null && (wordCounts.learned > 0 || wordCounts.learning > 0);
 
   if (loading) {
     return (
@@ -191,6 +200,11 @@ export default function MyWordsScreen() {
             )}
           </View>
         </ScrollView>
+      )}
+
+      {/* Bottom status bar */}
+      {showStatusBar && (
+        <BottomStatusBar learned={wordCounts.learned} learning={wordCounts.learning} />
       )}
 
       {/* Word modal */}

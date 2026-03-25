@@ -300,6 +300,34 @@ export async function getUserWordMap(userId: string): Promise<Map<string, UserWo
   return map;
 }
 
+/**
+ * Count words by status for the bottom bar:
+ * - learned: suspended=false AND (marked_as_learned=true OR level=8)
+ * - learning: suspended=false AND marked_as_learned=false AND level 0–7
+ */
+export async function getWordCounts(
+  userId: string
+): Promise<{ learned: number; learning: number }> {
+  const { data, error } = await supabase
+    .from('user_word')
+    .select('level, marked_as_learned')
+    .eq('user_id', userId)
+    .eq('suspended', false);
+
+  if (error) throw new Error(error.message);
+
+  let learned = 0;
+  let learning = 0;
+  for (const row of data ?? []) {
+    if (row.marked_as_learned || row.level === 8) {
+      learned++;
+    } else {
+      learning++;
+    }
+  }
+  return { learned, learning };
+}
+
 // ---------- LIBRARY (Local SQLite) ----------
 
 /**
