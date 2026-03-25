@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -96,15 +95,9 @@ export default function MyWordsScreen() {
   const isEmpty = words.length === 0 && !loading;
   const showStatusBar = wordCounts !== null && (wordCounts.learned > 0 || wordCounts.learning > 0);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // While data loads, render nothing — the beige contentStyle background
+  // matches the splash screen, so the transition is seamless.
+  if (loading) return null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -224,11 +217,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   header: {
     flexDirection: 'row',
