@@ -77,6 +77,9 @@ cd "/Users/lounaguichard/Documents/spanish_project/spanish claude"
 npx expo start --tunnel --clear   # ⚠️ must use --tunnel --clear, then scan QR with Expo Go
 ```
 
+## Workflow
+- When asked to "merge", always merge locally **and** push to GitHub.
+
 ## Links
 - Figma screens: https://www.figma.com/design/3dHMRP2tvCfK6TvthRhAIa/Spanish-vocabulary-app?node-id=76-761
 - Figma design system: https://www.figma.com/design/3dHMRP2tvCfK6TvthRhAIa/Spanish-vocabulary-app?node-id=108-300
