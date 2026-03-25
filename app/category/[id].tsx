@@ -7,7 +7,7 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { IconArrowLeft } from '../../components/icons';
 import { SubCategoryPill } from '../../components/SubCategoryPill';
@@ -36,6 +36,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function CategoryPage() {
   const router = useRouter();
   const { userId } = useAuth();
+  const insets = useSafeAreaInsets();
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -118,7 +119,7 @@ export default function CategoryPage() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header: back arrow absolutely positioned, icon+title centered */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={8}>
@@ -169,7 +170,7 @@ export default function CategoryPage() {
             onRemoveWord={handleRemoveWord}
           />
         )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
         style={styles.list}
       />
     </SafeAreaView>

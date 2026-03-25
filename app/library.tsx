@@ -8,7 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import IllustrationEmpty from '../assets/illustration-empty.svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { IconArrowLeft, IconMagnifier } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
@@ -30,6 +30,7 @@ import { useAuth } from '../context/AuthContext';
 export default function LibraryScreen() {
   const router = useRouter();
   const { userId } = useAuth();
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchResults, setSearchResults] = useState<LibraryWord[]>([]);
@@ -114,7 +115,7 @@ export default function LibraryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={8}>
@@ -160,7 +161,7 @@ export default function LibraryScreen() {
                 onRemoveWord={handleRemoveWord}
               />
             )}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
             style={styles.list}
           />
         ) : (
@@ -184,7 +185,7 @@ export default function LibraryScreen() {
               onPress={() => handleCategoryPress(item)}
             />
           )}
-          contentContainerStyle={styles.gridContent}
+          contentContainerStyle={[styles.gridContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
           style={styles.list}
         />
       )}

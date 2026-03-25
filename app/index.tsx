@@ -8,7 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { IconPlusThin, IconSettings } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
@@ -29,6 +29,7 @@ import LogoEspanolo from '../assets/logo-espanolo.svg';
 export default function MyWordsScreen() {
   const router = useRouter();
   const { userId } = useAuth();
+  const insets = useSafeAreaInsets();
   const [words, setWords] = useState<UserWordWithWord[]>([]);
   const [wordCounts, setWordCounts] = useState<{ learned: number; learning: number } | null>(null);
   const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
@@ -97,7 +98,7 @@ export default function MyWordsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.accent} />
         </View>
@@ -106,7 +107,7 @@ export default function MyWordsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header — only shown when there are words */}
       {!isEmpty && (
         <View style={styles.header}>
@@ -153,7 +154,7 @@ export default function MyWordsScreen() {
       ) : (
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
