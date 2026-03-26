@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.successMain,
   },
   actionButtonLearnedPressed: {
-    backgroundColor: '#2E9E0F',
+    backgroundColor: Colors.successText,
   },
   // In progress: progress bar + cycle button
   inProgressRight: {

@@ -311,15 +311,16 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   resultBox: {
-    backgroundColor: Colors.backgroundSecondary,
     borderWidth: 2,
     padding: Spacing.m,
     gap: Spacing.m,
   },
   resultBoxCorrect: {
+    backgroundColor: Colors.successBackground,
     borderColor: Colors.successMain,
   },
   resultBoxIncorrect: {
+    backgroundColor: Colors.errorBackground,
     borderColor: Colors.errorMain,
   },
   resultLabel: {
