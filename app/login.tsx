@@ -10,58 +10,55 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import {
+  COLORS,
+  SPACING,
+  TEXT_INPUT,
+  ARROW_BUTTON,
+  LOGO,
+  MESSAGES,
+  VALIDATION,
+  BORDER_RADIUS,
+  SCREEN,
+} from '../lib/ui-specs';
 
 import LogoEspanolo from '../assets/logo-espanolo.svg';
+import ArrowForward from '../assets/icons/arrow-forward.svg';
 
 export default function LoginScreen() {
-  const { login, signup } = useAuth();
+  const { sendMagicLink } = useAuth();
+  const router = useRouter();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const EMAIL_ERROR_MESSAGES = new Set([
-    'Please enter your email address.',
-    'Please enter a valid email address.',
-    'Incorrect email or password.',
-    'An account already exists with this email. Please log in.',
-  ]);
+  const hasText = email.trim().length >= VALIDATION.emailInput.minCharacters;
+  const isValidEmail = VALIDATION.emailInput.emailRegex.test(email.trim());
+  const showArrow = hasText;
+  const arrowEnabled = isValidEmail && !loading;
 
-  function routeError(msg: string) {
-    if (EMAIL_ERROR_MESSAGES.has(msg)) {
-      setEmailError(msg);
-      setPasswordError(null);
-    } else {
-      setPasswordError(msg);
-      setEmailError(null);
+  async function handleSend() {
+    setError(null);
+
+    // Client-side validation before calling sendMagicLink
+    if (!isValidEmail) {
+      setError(MESSAGES.invalidEmailError);
+      return;
     }
-  }
 
-  async function handleLogin() {
-    setEmailError(null);
-    setPasswordError(null);
     setLoading(true);
-    const result = await login(email, password);
+    const result = await sendMagicLink(email);
     setLoading(false);
-    if (!result.success) routeError(result.error ?? 'Login failed.');
-    // On success, AuthenticatedLayout in _layout.tsx redirects to '/'
-  }
 
-  async function handleSignup() {
-    setEmailError(null);
-    setPasswordError(null);
-    setLoading(true);
-    const result = await signup(email, password);
-    setLoading(false);
-    if (!result.success) routeError(result.error ?? 'Sign up failed.');
-    // On success, AuthenticatedLayout in _layout.tsx redirects to '/'
+    if (result.success) {
+      router.push('/check-email' as any);
+    } else {
+      setError(result.error ?? 'Something went wrong. Please try again.');
+    }
   }
 
   return (
@@ -76,95 +73,63 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
-          <LogoEspanolo width={232} height={51} />
+          <LogoEspanolo width={LOGO.app.width} height={LOGO.app.height} />
 
-          {/* Form */}
+          {/* Email input with arrow button */}
           <View style={styles.form}>
-            {/* Inputs */}
-            <View style={styles.inputs}>
-              {/* Email */}
-              <View style={styles.emailWrapper}>
+            <View style={styles.inputWrapper}>
+              <View
+                style={[
+                  styles.inputRow,
+                  error ? styles.inputError : null,
+                ]}
+              >
                 <TextInput
-                  style={[styles.input, emailError ? styles.inputError : null]}
-                  placeholder="Email"
-                  placeholderTextColor={Colors.textSecondary}
+                  style={styles.textInput}
+                  placeholder={MESSAGES.emailPlaceholder}
+                  placeholderTextColor={COLORS.textSecondary}
                   value={email}
-                  onChangeText={(t) => { setEmail(t); setEmailError(null); }}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    setError(null);
+                  }}
+                  onSubmitEditing={arrowEnabled ? handleSend : undefined}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="email"
                   textContentType="emailAddress"
+                  returnKeyType="go"
+                  editable={!loading}
                 />
-                {emailError ? <Text style={styles.helperTextError}>{emailError}</Text> : null}
-              </View>
 
-              {/* Password */}
-              <View style={styles.passwordWrapper}>
-                <View style={[styles.passwordInput, passwordError ? styles.passwordInputError : null]}>
-                  <TextInput
-                    style={styles.passwordTextInput}
-                    placeholder="Password"
-                    placeholderTextColor={Colors.textSecondary}
-                    value={password}
-                    onChangeText={(t) => { setPassword(t); setPasswordError(null); }}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoComplete="password"
-                    textContentType="password"
-                  />
+                {showArrow && (
                   <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    style={styles.eyeButton}
-                    hitSlop={8}
+                    onPress={handleSend}
+                    disabled={!arrowEnabled}
+                    style={({ pressed }) => [
+                      styles.arrowButton,
+                      pressed && arrowEnabled && styles.arrowButtonPressed,
+                      !arrowEnabled && styles.arrowButtonDisabled,
+                    ]}
+                    hitSlop={4}
                   >
-                    <Ionicons
-                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                      size={24}
-                      color={Colors.textSecondary}
-                    />
+                    {loading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={COLORS.textInverted}
+                      />
+                    ) : (
+                      <ArrowForward
+                        width={ARROW_BUTTON.icon.width}
+                        height={ARROW_BUTTON.icon.height}
+                      />
+                    )}
                   </Pressable>
-                </View>
-                <Text style={[styles.helperText, passwordError ? styles.helperTextError : null]}>
-                  {passwordError ?? 'Enter a strong password.'}
-                </Text>
+                )}
               </View>
-            </View>
 
-            {/* Buttons */}
-            <View style={styles.buttons}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  pressed && styles.buttonPressed,
-                  loading && styles.buttonDisabled,
-                ]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={Colors.textInverted} size="small" />
-                ) : (
-                  <Text style={styles.buttonText}>Log in</Text>
-                )}
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  pressed && styles.buttonPressed,
-                  loading && styles.buttonDisabled,
-                ]}
-                onPress={handleSignup}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={Colors.textInverted} size="small" />
-                ) : (
-                  <Text style={styles.buttonText}>Create account</Text>
-                )}
-              </Pressable>
+              {error && <Text style={styles.errorText}>{error}</Text>}
             </View>
           </View>
         </ScrollView>
@@ -178,7 +143,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -187,106 +152,60 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.l,
-    paddingVertical: Spacing.xl,
-    gap: Spacing.xxxl, // 64px between logo and form — matches Figma
+    paddingHorizontal: SCREEN.padding.horizontal,
+    gap: SCREEN.gaps.contentToContent,
   },
-  // Form: inputs + buttons
   form: {
     width: '100%',
-    gap: Spacing.xl, // 32px between inputs group and buttons group
+    gap: SCREEN.gaps.sectionGap,
   },
-  // Inputs group: 16px gap
-  inputs: {
+  inputWrapper: {
     width: '100%',
-    gap: Spacing.m,
+    gap: TEXT_INPUT.default.helperText.marginTop,
   },
-  // Email wrapper (input + optional error text)
-  emailWrapper: {
+  inputRow: {
     width: '100%',
-    gap: Spacing.s,
-  },
-  // Email input
-  input: {
-    width: '100%',
-    height: 48,
-    backgroundColor: Colors.background,
-    borderWidth: 2,
-    borderColor: Colors.outline,
-    paddingHorizontal: Spacing.m,
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
-  },
-  inputError: {
-    borderColor: Colors.errorMain,
-  },
-  // Password wrapper (input + helper text)
-  passwordWrapper: {
-    width: '100%',
-    gap: Spacing.s,
-  },
-  // Password input row (TextInput + eye icon)
-  passwordInput: {
-    width: '100%',
-    height: 48,
-    backgroundColor: Colors.background,
-    borderWidth: 2,
-    borderColor: Colors.outline,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: Spacing.m,
-    paddingRight: Spacing.s,
+    borderWidth: TEXT_INPUT.default.input.borderWidth,
+    borderColor: TEXT_INPUT.default.input.borderColor,
+    borderRadius: TEXT_INPUT.default.input.borderRadius,
+    backgroundColor: TEXT_INPUT.default.input.backgroundColor,
+    paddingTop: TEXT_INPUT.default.input.padding.top,
+    paddingBottom: TEXT_INPUT.default.input.padding.bottom,
+    paddingLeft: TEXT_INPUT.default.input.padding.left,
+    paddingRight: TEXT_INPUT.default.input.padding.right,
   },
-  passwordTextInput: {
+  inputError: {
+    borderColor: TEXT_INPUT.error.input.borderColor,
+  },
+  textInput: {
     flex: 1,
-    height: '100%',
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
+    fontFamily: 'Lora_400Regular',
+    fontSize: TEXT_INPUT.default.placeholder.fontSize,
+    color: COLORS.textPrimary,
+    padding: 0, // Remove default TextInput padding
   },
-  eyeButton: {
-    width: 36,
-    height: 36,
+  arrowButton: {
+    width: ARROW_BUTTON.width,
+    height: ARROW_BUTTON.height,
+    borderRadius: ARROW_BUTTON.borderRadius,
+    backgroundColor: ARROW_BUTTON.default.backgroundColor,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: SPACING.xs,
   },
-  helperText: {
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.small,
-    color: Colors.textSecondary,
-    lineHeight: 16,
+  arrowButtonPressed: {
+    backgroundColor: ARROW_BUTTON.hover.backgroundColor,
   },
-  passwordInputError: {
-    borderColor: Colors.errorMain,
+  arrowButtonDisabled: {
+    backgroundColor: ARROW_BUTTON.disabled.backgroundColor,
+    opacity: ARROW_BUTTON.disabled.opacity,
   },
-  helperTextError: {
-    color: Colors.errorMain,
-  },
-  // Buttons group: 16px gap
-  buttons: {
-    width: '100%',
-    gap: Spacing.m,
-  },
-  button: {
-    backgroundColor: Colors.accent,
-    borderWidth: 2,
-    borderColor: Colors.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.l,
-    paddingVertical: Spacing.s,
-  },
-  buttonPressed: {
-    backgroundColor: Colors.accentHover,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontFamily: FontFamily.loraMedium,
-    fontSize: FontSize.bodyLarge,
-    color: Colors.textInverted,
-    lineHeight: 28,
+  errorText: {
+    fontFamily: 'Lora_400Regular',
+    fontSize: TEXT_INPUT.error.helperText.fontSize,
+    lineHeight: 18,
+    color: TEXT_INPUT.error.helperText.color,
   },
 });

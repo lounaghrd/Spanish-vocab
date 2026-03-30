@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, getAuthRedirectUrl } from '../lib/supabase';
 
 // ---------- TYPES ----------
 
@@ -12,9 +12,15 @@ interface AuthContextValue {
   userId: string | null;
   /** True while the app is restoring a persisted session on startup. */
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
-  signup: (email: string, password: string) => Promise<AuthResult>;
+  /** Send a magic link to the given email address. */
+  sendMagicLink: (email: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  /** The email address the magic link was sent to (for check-email screen). */
+  magicLinkEmail: string | null;
+  /** Timestamp of last magic link send (for 30s cooldown). */
+  lastEmailSentAt: number | null;
+  /** Reset magic link state (for "Change email address" flow). */
+  clearMagicLinkState: () => void;
 }
 
 // ---------- HELPERS ----------
@@ -23,17 +29,7 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-/**
- * Returns an error message if the password doesn't meet the requirements, or null if it's valid.
- * Requirements: ≥8 chars, ≥1 digit, ≥1 special character.
- */
-function validatePassword(password: string): string | null {
-  if (password.length < 8) return 'Password must be at least 8 characters.';
-  if (!/\d/.test(password)) return 'Password must contain at least 1 digit.';
-  if (!/[!@#$%^&*()\-_=+[\]{};:'",.<>/?\\|`~]/.test(password))
-    return 'Password must contain at least 1 special character.';
-  return null;
-}
+const COOLDOWN_MS = 30_000;
 
 // ---------- CONTEXT ----------
 
@@ -42,6 +38,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [magicLinkEmail, setMagicLinkEmail] = useState<string | null>(null);
+  const [lastEmailSentAt, setLastEmailSentAt] = useState<number | null>(null);
 
   // Listen for auth state changes (handles session restore + login/logout)
   useEffect(() => {
@@ -61,47 +59,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function login(email: string, password: string): Promise<AuthResult> {
-    if (!email.trim()) return { success: false, error: 'Please enter your email address.' };
-    if (!validateEmail(email)) return { success: false, error: 'Please enter a valid email address.' };
-    if (!password) return { success: false, error: 'Please enter your password.' };
+  async function sendMagicLink(email: string): Promise<AuthResult> {
+    const trimmed = email.trim().toLowerCase();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
+    if (!trimmed) return { success: false, error: 'Please enter your email address.' };
+    if (!validateEmail(trimmed)) return { success: false, error: 'Enter a valid email address.' };
+
+    // 30-second cooldown between sends
+    if (lastEmailSentAt && Date.now() - lastEmailSentAt < COOLDOWN_MS) {
+      return {
+        success: false,
+        error: 'We have already sent an email to this address. Try again in 30 seconds.',
+      };
+    }
+
+    const redirectUrl = getAuthRedirectUrl();
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmed,
+      options: { emailRedirectTo: redirectUrl },
     });
 
     if (error) {
-      // Map Supabase error messages to user-friendly ones
-      if (error.message === 'Invalid login credentials') {
-        return { success: false, error: 'Incorrect email or password.' };
-      }
       return { success: false, error: error.message };
     }
 
+    setMagicLinkEmail(trimmed);
+    setLastEmailSentAt(Date.now());
     return { success: true };
   }
 
-  async function signup(email: string, password: string): Promise<AuthResult> {
-    if (!email.trim()) return { success: false, error: 'Please enter your email address.' };
-    if (!validateEmail(email)) return { success: false, error: 'Please enter a valid email address.' };
-
-    const passwordError = validatePassword(password);
-    if (passwordError) return { success: false, error: passwordError };
-
-    const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (error) {
-      if (error.message === 'User already registered') {
-        return { success: false, error: 'An account already exists with this email. Please log in.' };
-      }
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
+  function clearMagicLinkState() {
+    setMagicLinkEmail(null);
+    setLastEmailSentAt(null);
   }
 
   async function logout(): Promise<void> {
@@ -109,7 +99,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ userId, isLoading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        userId,
+        isLoading,
+        sendMagicLink,
+        logout,
+        magicLinkEmail,
+        lastEmailSentAt,
+        clearMagicLinkState,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

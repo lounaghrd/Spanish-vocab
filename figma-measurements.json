@@ -1,0 +1,868 @@
+{
+  "components": {
+    "textInput": {
+      "component_id": "203-634",
+      "name": "Input text",
+      "description": "Text input field with label, helper text, and optional arrow button",
+      "states": {
+        "default_small": {
+          "id": "203-633",
+          "size": "small",
+          "container": {
+            "width": 393,
+            "height": null,
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            }
+          },
+          "layout": {
+            "mode": "column",
+            "gap": 8,
+            "justifyContent": "center",
+            "alignItems": "stretch"
+          },
+          "label": {
+            "text": "Field label",
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 550,
+            "lineHeight": "1.14em",
+            "letterSpacing": "1.43%",
+            "color": "#191919"
+          },
+          "required_indicator": {
+            "text": "*",
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 550,
+            "lineHeight": "1.14em",
+            "letterSpacing": "1.43%",
+            "color": "#D4183D"
+          },
+          "input_field": {
+            "width": null,
+            "height": null,
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#262626",
+            "backgroundColor": "#F1E1D6",
+            "layout": {
+              "mode": "row",
+              "justifyContent": "space-between",
+              "alignItems": "center"
+            }
+          },
+          "icon_left": {
+            "width": 26,
+            "height": 26
+          },
+          "text_content": {
+            "text": "Enter text here",
+            "fontFamily": "Lora",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": "1.5em",
+            "color": "#655F58"
+          },
+          "helper_text": {
+            "text": "This is helper text",
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": "1.286em",
+            "color": "#655F58"
+          },
+          "arrow_button": {
+            "present": false,
+            "width": 32,
+            "height": 32
+          }
+        },
+        "default_large": {
+          "id": "203-707",
+          "size": "large",
+          "container": {
+            "width": 393
+          },
+          "layout": {
+            "mode": "column",
+            "gap": 8,
+            "justifyContent": "center",
+            "alignItems": "stretch"
+          },
+          "label": {
+            "text": "Field label",
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 550,
+            "lineHeight": "1.14em",
+            "letterSpacing": "1.43%",
+            "color": "#191919"
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#262626",
+            "backgroundColor": "#F1E1D6"
+          },
+          "icon_left": {
+            "width": 26,
+            "height": 26
+          },
+          "text_content": {
+            "fontFamily": "Lora",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": "1.5em"
+          },
+          "helper_text": {
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": "1.286em",
+            "color": "#655F58"
+          },
+          "arrow_button": {
+            "present": false,
+            "width": 32,
+            "height": 32
+          }
+        },
+        "error_small": {
+          "id": "203-821",
+          "size": "small",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#D4183D",
+            "backgroundColor": "#F1E1D6"
+          },
+          "label": {
+            "color": "#191919"
+          },
+          "required_indicator": {
+            "color": "#D4183D"
+          },
+          "helper_text": {
+            "text": "This is helper text",
+            "fontFamily": "Lora",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": "1.286em",
+            "color": "#D4183D"
+          },
+          "text_content": {
+            "color": "#191919"
+          },
+          "arrow_button": {
+            "present": false,
+            "width": 32,
+            "height": 32
+          }
+        },
+        "error_large": {
+          "id": "203-849",
+          "size": "large",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#D4183D",
+            "backgroundColor": "#F1E1D6"
+          },
+          "helper_text": {
+            "color": "#D4183D"
+          }
+        },
+        "disabled_small": {
+          "id": "203-691",
+          "size": "small",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#837A72",
+            "backgroundColor": "#F1E1D6"
+          },
+          "label": {
+            "color": "#837A72"
+          },
+          "required_indicator": {
+            "color": "#837A72"
+          },
+          "text_content": {
+            "color": "#837A72"
+          },
+          "helper_text": {
+            "color": "#837A72"
+          }
+        },
+        "disabled_large": {
+          "id": "203-727",
+          "size": "large",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 2,
+            "borderColor": "#837A72"
+          },
+          "label": {
+            "color": "#837A72"
+          }
+        },
+        "focused_small": {
+          "id": "203-635",
+          "size": "small",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 3,
+            "borderColor": "#F26641",
+            "borderDashArray": "6 6",
+            "backgroundColor": "#F6EDE5"
+          },
+          "label": {
+            "color": "#191919"
+          },
+          "text_content": {
+            "color": "#655F58"
+          }
+        },
+        "focused_large": {
+          "id": "203-717",
+          "size": "large",
+          "container": {
+            "width": 393
+          },
+          "input_field": {
+            "padding": {
+              "top": 12,
+              "right": 8,
+              "bottom": 12,
+              "left": 8
+            },
+            "borderRadius": 5,
+            "borderWidth": 3,
+            "borderColor": "#F26641",
+            "borderDashArray": "6 6",
+            "backgroundColor": "#F6EDE5"
+          },
+          "label": {
+            "color": "#191919"
+          }
+        }
+      }
+    },
+    "arrowButton": {
+      "component_id": "639-1251",
+      "name": "Arrow button",
+      "description": "Circular button with forward arrow icon",
+      "states": {
+        "default": {
+          "id": "639-1250",
+          "width": 32,
+          "height": 32,
+          "padding": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "borderRadius": 5,
+          "backgroundColor": "#F26641",
+          "layout": {
+            "mode": "row",
+            "justifyContent": "center",
+            "alignItems": "center"
+          },
+          "icon": {
+            "name": "forward arrow",
+            "width": 22,
+            "height": 22,
+            "color": "inherit"
+          }
+        },
+        "hover": {
+          "id": "639-1252",
+          "width": 32,
+          "height": 32,
+          "padding": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "borderRadius": 5,
+          "backgroundColor": "#F37452",
+          "layout": {
+            "mode": "row",
+            "justifyContent": "center",
+            "alignItems": "center"
+          },
+          "icon": {
+            "width": 22,
+            "height": 22
+          }
+        }
+      }
+    },
+    "loginScreens": {
+      "component_id": "639-2048",
+      "name": "Login and Account creation flow",
+      "description": "Login flow screens with email input and passwordless authentication",
+      "screen_1_user_opens_app": {
+        "id": "639-1950",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24,
+          "vertical": 0
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "borderWidth": 2,
+        "borderColor": "#191919",
+        "phone_header": {
+          "padding": {
+            "top": 16,
+            "right": 0,
+            "bottom": 16,
+            "left": 0
+          },
+          "height": "auto"
+        },
+        "body": {
+          "layout": {
+            "mode": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 64
+          }
+        },
+        "logo": {
+          "width": 232,
+          "height": 51,
+          "color": "#FFFFFF"
+        },
+        "input_container": {
+          "layout": {
+            "mode": "column",
+            "gap": 32,
+            "alignItems": "stretch"
+          },
+          "padding": {
+            "bottom": 48
+          }
+        },
+        "input_text": {
+          "state": "Default",
+          "size": "small",
+          "placeholder": "Your email"
+        }
+      },
+      "screen_2_arrow_appears": {
+        "id": "639-1957",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "logo": {
+          "width": 232,
+          "height": 51
+        },
+        "input_text": {
+          "state": "Default",
+          "size": "small",
+          "placeholder": "user.name@email.com",
+          "arrow_button": true
+        },
+        "arrow_button": {
+          "width": 32,
+          "height": 32,
+          "backgroundColor": "#F26641"
+        }
+      },
+      "screen_3_check_email": {
+        "id": "639-1964",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "header": {
+          "padding": {
+            "top": 16,
+            "bottom": 16
+          }
+        },
+        "body": {
+          "layout": {
+            "mode": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 48
+          }
+        },
+        "center_content": {
+          "layout": {
+            "mode": "column",
+            "alignItems": "center",
+            "gap": 32
+          },
+          "padding": {
+            "bottom": 48
+          }
+        },
+        "heading": {
+          "text": "Check your email",
+          "fontFamily": "Playfair Display",
+          "fontSize": 24,
+          "fontWeight": 700,
+          "lineHeight": "1.25em",
+          "letterSpacing": "4.17%",
+          "color": "#191919"
+        },
+        "description_line_1": {
+          "text": "Click the link we sent to",
+          "fontFamily": "Lora",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": "1.286em",
+          "color": "#191919"
+        },
+        "description_line_2": {
+          "text": "user.name@email.com",
+          "fontFamily": "Lora",
+          "fontSize": 16,
+          "fontWeight": 550,
+          "lineHeight": "1.5em",
+          "letterSpacing": "1.25%",
+          "color": "#191919"
+        },
+        "envelope_illustration": {
+          "width": 138,
+          "height": 81
+        },
+        "change_email_link": {
+          "text": "Change email address",
+          "fontFamily": "Lora",
+          "fontSize": 14,
+          "fontWeight": 550,
+          "lineHeight": "1.14em",
+          "letterSpacing": "1.43%",
+          "color": "#191919"
+        },
+        "logo": {
+          "width": 130,
+          "height": 28,
+          "position": "absolute",
+          "bottom": 28,
+          "left": 136
+        }
+      },
+      "screen_4_app_ready": {
+        "id": "639-1978",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "heading": {
+          "text": "Build your Spanish vocabulary.",
+          "fontFamily": "Playfair Display",
+          "fontSize": 24,
+          "fontWeight": 700,
+          "lineHeight": "1.25em",
+          "letterSpacing": "4.17%",
+          "color": "#191919",
+          "width": 247
+        },
+        "button": {
+          "label": "Add new words",
+          "fontFamily": "Lora",
+          "fontSize": 18,
+          "fontWeight": 550,
+          "lineHeight": "1.556em",
+          "color": "#FFFFFF",
+          "backgroundColor": "#F26641",
+          "padding": {
+            "top": 8,
+            "right": 24,
+            "bottom": 8,
+            "left": 24
+          },
+          "layout": {
+            "mode": "row",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 16
+          },
+          "icon": {
+            "width": 26,
+            "height": 26
+          }
+        },
+        "logo": {
+          "width": 130,
+          "height": 28,
+          "position": "absolute",
+          "bottom": 28,
+          "left": 112
+        }
+      },
+      "email_content": {
+        "id": "639-1986",
+        "width": 398,
+        "padding": 64,
+        "backgroundColor": "#F1E1D6",
+        "layout": {
+          "mode": "column",
+          "gap": 64
+        },
+        "logo": {
+          "width": 137,
+          "height": 30
+        },
+        "heading": {
+          "text": "Click the link to sign in",
+          "fontFamily": "Playfair Display",
+          "fontSize": 30,
+          "fontWeight": 700,
+          "lineHeight": "1.25em",
+          "color": "#191919"
+        },
+        "description": {
+          "text": "The link below is a secure link for us to authenticate you.",
+          "fontFamily": "Lora",
+          "fontSize": 16,
+          "fontWeight": 400,
+          "lineHeight": "1.5em",
+          "color": "#191919"
+        },
+        "button": {
+          "label": "Sign in to Españolo",
+          "fontFamily": "Lora",
+          "fontSize": 18,
+          "fontWeight": 550,
+          "lineHeight": "1.556em",
+          "color": "#FFFFFF",
+          "backgroundColor": "#F26641",
+          "padding": {
+            "top": 8,
+            "right": 24,
+            "bottom": 8,
+            "left": 24
+          },
+          "layout": {
+            "mode": "row",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 16
+          }
+        },
+        "expiry": {
+          "text": "This link expires in 24h.",
+          "fontFamily": "Lora",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": "1.286em",
+          "color": "#655F58"
+        },
+        "disclaimer": {
+          "text": "If you didn't request this email, you can safely ignore it. If you are experiencing issues, please contact support.",
+          "fontFamily": "Lora",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": "1.286em",
+          "color": "#655F58"
+        }
+      }
+    },
+    "edgeCaseScreens": {
+      "component_id": "639-2077",
+      "name": "Edge cases",
+      "description": "Error states and edge case screens for login flow",
+      "invalid_email_format": {
+        "id": "639-1824",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "input_text": {
+          "state": "Error",
+          "size": "small",
+          "value": "user.name",
+          "helper_text": "Enter a valid email address.",
+          "helper_text_color": "#D4183D",
+          "border_color": "#D4183D",
+          "border_width": 2,
+          "arrow_button": true
+        }
+      },
+      "rate_limit_reached": {
+        "id": "639-1831",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "input_text": {
+          "state": "Error",
+          "size": "small",
+          "value": "user.name@email.com",
+          "helper_text": "We have already sent an email to this address. Try again in 30 seconds.",
+          "helper_text_color": "#D4183D",
+          "border_color": "#D4183D",
+          "border_width": 2,
+          "arrow_button": true
+        }
+      },
+      "link_expired": {
+        "id": "639-1838",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "body": {
+          "layout": {
+            "mode": "column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 48
+          }
+        },
+        "heading": {
+          "text": "This link has expired",
+          "fontFamily": "Playfair Display",
+          "fontSize": 24,
+          "fontWeight": 700,
+          "lineHeight": "1.25em",
+          "letterSpacing": "4.17%",
+          "color": "#191919"
+        },
+        "message": {
+          "text": "If the problem persists, please contact support.",
+          "fontFamily": "Lora",
+          "fontSize": 14,
+          "fontWeight": 400,
+          "lineHeight": "1.286em",
+          "color": "#191919"
+        },
+        "button": {
+          "label": "Resend link",
+          "fontFamily": "Lora",
+          "fontSize": 18,
+          "fontWeight": 550,
+          "lineHeight": "1.556em",
+          "color": "#191919",
+          "backgroundColor": "#F1E1D6",
+          "borderWidth": 2,
+          "borderColor": "#262626",
+          "padding": {
+            "top": 8,
+            "right": 24,
+            "bottom": 8,
+            "left": 24
+          },
+          "layout": {
+            "mode": "row",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "gap": 16
+          }
+        }
+      },
+      "link_did_not_open": {
+        "id": "639-1848",
+        "width": 402,
+        "height": 821,
+        "padding": {
+          "horizontal": 24
+        },
+        "borderRadius": 16,
+        "backgroundColor": "#F1E1D6",
+        "heading": {
+          "text": "Open the Españolo app",
+          "fontFamily": "Playfair Display",
+          "fontSize": 24,
+          "fontWeight": 700,
+          "lineHeight": "1.25em",
+          "letterSpacing": "4.17%",
+          "color": "#191919"
+        },
+        "button": {
+          "label": "Open your app",
+          "fontFamily": "Lora",
+          "fontSize": 18,
+          "fontWeight": 550,
+          "lineHeight": "1.556em",
+          "color": "#191919",
+          "backgroundColor": "#F1E1D6",
+          "borderWidth": 2,
+          "borderColor": "#262626",
+          "padding": {
+            "top": 8,
+            "right": 24,
+            "bottom": 8,
+            "left": 24
+          }
+        }
+      }
+    }
+  },
+  "colors": {
+    "primary": {
+      "background": "#F1E1D6",
+      "background_secondary": "#F6EDE5",
+      "background_hover": "#E0CFC1"
+    },
+    "accent": {
+      "main": "#F26641",
+      "hover": "#F37452"
+    },
+    "text": {
+      "primary": "#191919",
+      "secondary": "#655F58",
+      "inverted": "#FFFFFF",
+      "disabled_or_placeholder": "#837A72"
+    },
+    "error": {
+      "main": "#D4183D"
+    },
+    "outline": "#262626"
+  },
+  "typography": {
+    "heading_2": {
+      "fontFamily": "Playfair Display",
+      "fontSize": 30,
+      "fontWeight": 700,
+      "lineHeight": "1.25em"
+    },
+    "heading_3": {
+      "fontFamily": "Playfair Display",
+      "fontSize": 24,
+      "fontWeight": 700,
+      "lineHeight": "1.25em",
+      "letterSpacing": "4.17%"
+    },
+    "body_text_large_medium": {
+      "fontFamily": "Lora",
+      "fontSize": 18,
+      "fontWeight": 550,
+      "lineHeight": "1.556em"
+    },
+    "body_text_medium": {
+      "fontFamily": "Lora",
+      "fontSize": 16,
+      "fontWeight": 550,
+      "lineHeight": "1.5em",
+      "letterSpacing": "1.25%"
+    },
+    "body_text_default": {
+      "fontFamily": "Lora",
+      "fontSize": 16,
+      "fontWeight": 400,
+      "lineHeight": "1.5em"
+    },
+    "small_text_medium": {
+      "fontFamily": "Lora",
+      "fontSize": 14,
+      "fontWeight": 550,
+      "lineHeight": "1.14em",
+      "letterSpacing": "1.43%"
+    },
+    "small_text": {
+      "fontFamily": "Lora",
+      "fontSize": 14,
+      "fontWeight": 400,
+      "lineHeight": "1.286em"
+    }
+  },
+  "spacing": {
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 48,
+    "3xl": 64
+  },
+  "borderRadius": {
+    "small": 5,
+    "medium": 16
+  },
+  "shadows": {
+    "none": "none"
+  }
+}
