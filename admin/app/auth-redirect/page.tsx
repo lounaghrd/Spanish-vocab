@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://ansrjcvtqalqlatbsdut.supabase.co';
@@ -8,7 +8,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_OYfCLe3VI4SA00RGBbfW9A_7VWYKIfO';
 const REDIRECT_URL = 'https://espanolo-admin.vercel.app/auth-redirect';
 const APP_SCHEME = 'spanishvocab://auth/callback';
 
-type State = 'expired' | 'resend-form' | 'sent';
+type State = 'valid' | 'expired' | 'resend-form' | 'sent';
 
 // ─── Shared style tokens ───────────────────────────────────────────────────
 
@@ -79,25 +79,32 @@ export default function AuthRedirectPage() {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
+  const hashRef = useRef('');
+
+  function triggerDeepLink() {
+    const h = hashRef.current;
+    if (!h) return;
+    // Use a hidden link click instead of setting window.location.href.
+    // This avoids Safari replacing the page with a blank screen when the
+    // custom scheme can't be handled (e.g. app not installed).
+    const link = document.createElement('a');
+    link.href = `${APP_SCHEME}${h}`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (document.body.contains(link)) document.body.removeChild(link);
+    }, 500);
+  }
 
   useEffect(() => {
     const hash = window.location.hash;
-
     if (hash && hash.includes('access_token')) {
-      // Trigger the native app via a hidden link click.
-      // This avoids setting window.location.href, which causes Safari to
-      // replace the page with a blank screen when the scheme can't be handled.
-      const link = document.createElement('a');
-      link.href = `${APP_SCHEME}${hash}`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        if (document.body.contains(link)) document.body.removeChild(link);
-      }, 500);
+      hashRef.current = hash;
+      setState('valid');
+      triggerDeepLink();
     }
-    // The fallback screen is always shown immediately. If the app opens,
-    // the user leaves this page anyway — they will never read it.
+    // else: stays 'expired'
   }, []);
 
   async function handleResend(e: React.FormEvent) {
@@ -121,6 +128,23 @@ export default function AuthRedirectPage() {
     } else {
       setState('sent');
     }
+  }
+
+  // ─── Valid token: open the app ────────────────────────────────────────────
+  if (state === 'valid') {
+    return (
+      <div style={pageContainer}>
+        <div style={centerContent}>
+          <div style={textGroup}>
+            <h1 style={heading}>Open the Españolo app</h1>
+          </div>
+          <button style={secondaryButton} onClick={triggerDeepLink}>
+            Open your app
+          </button>
+        </div>
+        <Logo />
+      </div>
+    );
   }
 
   // ─── Sent confirmation ────────────────────────────────────────────────────
