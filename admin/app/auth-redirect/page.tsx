@@ -8,7 +8,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_OYfCLe3VI4SA00RGBbfW9A_7VWYKIfO';
 const REDIRECT_URL = 'https://espanolo-admin.vercel.app/auth-redirect';
 const APP_SCHEME = 'spanishvocab://auth/callback';
 
-type State = 'redirecting' | 'expired' | 'resend-form' | 'sent';
+type State = 'expired' | 'resend-form' | 'sent';
 
 // ─── Shared style tokens ───────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ const textInput: React.CSSProperties = {
 // ─── Page component ────────────────────────────────────────────────────────
 
 export default function AuthRedirectPage() {
-  const [state, setState] = useState<State>('redirecting');
+  const [state, setState] = useState<State>('expired');
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -84,15 +84,20 @@ export default function AuthRedirectPage() {
     const hash = window.location.hash;
 
     if (hash && hash.includes('access_token')) {
-      // Forward the session tokens to the native app
-      window.location.href = `${APP_SCHEME}${hash}`;
-      // After 2.5s, if the user is still here the app didn't open — show fallback
-      const timer = setTimeout(() => setState('expired'), 2500);
-      return () => clearTimeout(timer);
+      // Trigger the native app via a hidden link click.
+      // This avoids setting window.location.href, which causes Safari to
+      // replace the page with a blank screen when the scheme can't be handled.
+      const link = document.createElement('a');
+      link.href = `${APP_SCHEME}${hash}`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) document.body.removeChild(link);
+      }, 500);
     }
-
-    // No valid token in URL — show expired screen immediately
-    setState('expired');
+    // The fallback screen is always shown immediately. If the app opens,
+    // the user leaves this page anyway — they will never read it.
   }, []);
 
   async function handleResend(e: React.FormEvent) {
@@ -116,11 +121,6 @@ export default function AuthRedirectPage() {
     } else {
       setState('sent');
     }
-  }
-
-  // ─── Redirecting (blank beige screen while app tries to open) ─────────────
-  if (state === 'redirecting') {
-    return <div style={{ width: '100%', height: '100%', backgroundColor: COLORS.background }} />;
   }
 
   // ─── Sent confirmation ────────────────────────────────────────────────────
