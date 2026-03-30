@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import {
   COLORS,
-  SPACING,
   TEXT_INPUT,
   LOGO,
   MESSAGES,
@@ -162,6 +161,7 @@ const styles = StyleSheet.create({
   inputRow: {
     width: '100%',
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: TEXT_INPUT.default.input.borderWidth,
     borderColor: TEXT_INPUT.default.input.borderColor,
@@ -180,12 +180,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lora_400Regular',
     fontSize: TEXT_INPUT.default.placeholder.fontSize,
     color: COLORS.textPrimary,
-    padding: 0, // Remove default TextInput padding
+    paddingVertical: 0,
+    paddingHorizontal: 8, // Frame 96 inner padding (0px 8px)
   },
   arrowButton: {
     width: 32,
     height: 32,
-    marginLeft: SPACING.xs,
   },
   errorText: {
     fontFamily: 'Lora_400Regular',

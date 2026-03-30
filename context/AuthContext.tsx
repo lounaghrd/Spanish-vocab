@@ -81,6 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (error) {
+      // Replace Supabase's raw rate-limit message with our own copy
+      const secondsMatch = error.message.match(/after (\d+) seconds/);
+      if (secondsMatch) {
+        const seconds = secondsMatch[1];
+        return {
+          success: false,
+          error: `We have already sent an email to this address. Try again in ${seconds} seconds.`,
+        };
+      }
       return { success: false, error: error.message };
     }
 
