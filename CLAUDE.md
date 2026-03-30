@@ -34,14 +34,6 @@ A mobile app to learn Spanish vocabulary using spaced repetition. iOS-first, bui
 | `components/icons.tsx`           | Custom SVG icon components                                                       |
 
 
-## Design System
-
-- Background: `#F1E1D6` (warm beige) — Secondary: `#F6EDE5`
-- Accent: `#F26641` (orange) — Hover: `#D4522E` — Disabled: `#F7B8A0`
-- Text Primary: `#191919` — Secondary: `#655F58` — Inverted: `#FFFFFF`
-- Success: `#36B911` — Error: `#D4183D` — Outline: `#262626`
-- Fonts: Playfair Display 700 (h1–h3), Lora 500 (body large/buttons), Lora 400 (body/small)
-
 ## Database Schema
 
 **Local SQLite (library cache, synced from Supabase on startup):**

@@ -17,16 +17,16 @@ import {
   COLORS,
   SPACING,
   TEXT_INPUT,
-  ARROW_BUTTON,
   LOGO,
   MESSAGES,
   VALIDATION,
-  BORDER_RADIUS,
   SCREEN,
 } from '../lib/ui-specs';
 
 import LogoEspanolo from '../assets/logo-espanolo.svg';
-import ArrowForward from '../assets/icons/arrow-forward.svg';
+import ArrowButtonDefault from '../assets/icons/arrow-button-default.svg';
+import ArrowButtonHover from '../assets/icons/arrow-button-hover.svg';
+import ArrowButtonDisabled from '../assets/icons/arrow-button-disabled.svg';
 
 export default function LoginScreen() {
   const { sendMagicLink } = useAuth();
@@ -107,23 +107,19 @@ export default function LoginScreen() {
                   <Pressable
                     onPress={handleSend}
                     disabled={!arrowEnabled}
-                    style={({ pressed }) => [
-                      styles.arrowButton,
-                      pressed && arrowEnabled && styles.arrowButtonPressed,
-                      !arrowEnabled && styles.arrowButtonDisabled,
-                    ]}
                     hitSlop={4}
+                    style={styles.arrowButton}
                   >
-                    {loading ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={COLORS.textInverted}
-                      />
-                    ) : (
-                      <ArrowForward
-                        width={ARROW_BUTTON.icon.width}
-                        height={ARROW_BUTTON.icon.height}
-                      />
+                    {({ pressed }) => (
+                      loading ? (
+                        <ActivityIndicator size="small" color={COLORS.textInverted} />
+                      ) : !arrowEnabled ? (
+                        <ArrowButtonDisabled width={32} height={32} />
+                      ) : pressed ? (
+                        <ArrowButtonHover width={32} height={32} />
+                      ) : (
+                        <ArrowButtonDefault width={32} height={32} />
+                      )
                     )}
                   </Pressable>
                 )}
@@ -187,20 +183,9 @@ const styles = StyleSheet.create({
     padding: 0, // Remove default TextInput padding
   },
   arrowButton: {
-    width: ARROW_BUTTON.width,
-    height: ARROW_BUTTON.height,
-    borderRadius: ARROW_BUTTON.borderRadius,
-    backgroundColor: ARROW_BUTTON.default.backgroundColor,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 32,
+    height: 32,
     marginLeft: SPACING.xs,
-  },
-  arrowButtonPressed: {
-    backgroundColor: ARROW_BUTTON.hover.backgroundColor,
-  },
-  arrowButtonDisabled: {
-    backgroundColor: ARROW_BUTTON.disabled.backgroundColor,
-    opacity: ARROW_BUTTON.disabled.opacity,
   },
   errorText: {
     fontFamily: 'Lora_400Regular',

@@ -7,16 +7,15 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import {
   COLORS,
-  SPACING,
   ILLUSTRATIONS,
   MESSAGES,
   SCREEN,
   SECONDARY_BUTTON,
+  LOGO,
 } from '../lib/ui-specs';
 
 import Envelope from '../assets/illustrations/envelope.svg';
 import LogoEspanolo from '../assets/logo-espanolo.svg';
-import { LOGO } from '../lib/ui-specs';
 
 export default function CheckEmailScreen() {
   const { magicLinkEmail, clearMagicLinkState } = useAuth();
@@ -41,7 +40,6 @@ export default function CheckEmailScreen() {
         return;
       }
 
-      // Extract the token from the Supabase verification URL
       const url = new URL(clipboardText);
       const token = url.searchParams.get('token');
       const type = url.searchParams.get('type');
@@ -70,51 +68,56 @@ export default function CheckEmailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.content}>
-        {/* Logo */}
-        <LogoEspanolo width={LOGO.app.width} height={LOGO.app.height} />
+      {/* Body: fills remaining space, centers content vertically, gap 48px */}
+      <View style={styles.body}>
+        {/* Center content: heading + inner frame, gap 32px, padding-bottom 48px */}
+        <View style={styles.centerContent}>
+          <Text style={styles.heading}>{MESSAGES.checkEmailHeading}</Text>
 
-        {/* Main content */}
-        <View style={styles.main}>
-          <Envelope
-            width={ILLUSTRATIONS.envelope.width}
-            height={ILLUSTRATIONS.envelope.height}
-          />
+          {/* Inner frame: text block + envelope + change email, gap 24px */}
+          <View style={styles.frame}>
+            {/* Text block: two lines stacked, centered */}
+            <View style={styles.textBlock}>
+              <Text style={styles.smallText}>Click the link we sent to</Text>
+              {magicLinkEmail && (
+                <Text style={styles.emailText}>{magicLinkEmail}</Text>
+              )}
+            </View>
 
-          <View style={styles.textGroup}>
-            <Text style={styles.heading}>{MESSAGES.checkEmailHeading}</Text>
+            <Envelope
+              width={ILLUSTRATIONS.envelope.width}
+              height={ILLUSTRATIONS.envelope.height}
+            />
 
-            {magicLinkEmail && (
-              <Text style={styles.body}>
-                We sent a sign-in link to{' '}
-                <Text style={styles.bodyBold}>{magicLinkEmail}</Text>
-              </Text>
-            )}
-          </View>
-
-          <Pressable onPress={handleChangeEmail} hitSlop={8}>
-            <Text style={styles.changeEmailLink}>
-              {MESSAGES.changeEmailLink}
-            </Text>
-          </Pressable>
-
-          {/* DEV ONLY — Paste magic link to verify token without deep linking */}
-          {__DEV__ && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.pasteButton,
-                pressed && styles.pasteButtonPressed,
-                verifying && styles.pasteButtonDisabled,
-              ]}
-              onPress={handlePasteLink}
-              disabled={verifying}
-            >
-              <Text style={styles.pasteButtonText}>
-                {verifying ? 'Verifying...' : 'Paste magic link'}
+            <Pressable onPress={handleChangeEmail} hitSlop={8}>
+              <Text style={styles.changeEmailLink}>
+                {MESSAGES.changeEmailLink}
               </Text>
             </Pressable>
-          )}
+          </View>
         </View>
+
+        {/* DEV ONLY — Paste magic link to verify token without deep linking */}
+        {__DEV__ && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.pasteButton,
+              pressed && styles.pasteButtonPressed,
+              verifying && styles.pasteButtonDisabled,
+            ]}
+            onPress={handlePasteLink}
+            disabled={verifying}
+          >
+            <Text style={styles.pasteButtonText}>
+              {verifying ? 'Verifying...' : 'Paste magic link'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Logo — absolute, bottom-centered, footer size (130×28) */}
+      <View style={styles.logoContainer} pointerEvents="none">
+        <LogoEspanolo width={LOGO.footer.width} height={LOGO.footer.height} />
       </View>
     </SafeAreaView>
   );
@@ -124,44 +127,67 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
+    paddingHorizontal: SCREEN.padding.horizontal,
   },
-  content: {
+  body: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SCREEN.padding.horizontal,
-    gap: SCREEN.gaps.contentToContent,
+    gap: 48,
   },
-  main: {
+  centerContent: {
     alignItems: 'center',
-    gap: SCREEN.gaps.sectionGap,
-  },
-  textGroup: {
-    alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 32,
+    paddingBottom: 48,
   },
   heading: {
     fontFamily: 'PlayfairDisplay_700Bold',
     fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: 1,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    width: 330,
+  },
+  frame: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  textBlock: {
+    alignItems: 'center',
+    width: 330,
+  },
+  smallText: {
+    fontFamily: 'Lora_400Regular',
+    fontSize: 14,
+    lineHeight: 18,
     color: COLORS.textPrimary,
     textAlign: 'center',
   },
-  body: {
-    fontFamily: 'Lora_400Regular',
+  emailText: {
+    fontFamily: 'Lora_500Medium',
     fontSize: 16,
     lineHeight: 24,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  bodyBold: {
-    fontFamily: 'Lora_500Medium',
+    letterSpacing: 0.2,
     color: COLORS.textPrimary,
+    textAlign: 'center',
   },
   changeEmailLink: {
     fontFamily: 'Lora_500Medium',
     fontSize: 14,
-    color: COLORS.accent,
+    lineHeight: 16,
+    letterSpacing: 0.2,
+    color: COLORS.textPrimary,
     textDecorationLine: 'underline',
+    textAlign: 'center',
+    width: 330,
+  },
+  logoContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   pasteButton: {
     paddingVertical: SECONDARY_BUTTON.padding.top,
@@ -170,7 +196,6 @@ const styles = StyleSheet.create({
     borderWidth: SECONDARY_BUTTON.borderWidth,
     borderColor: SECONDARY_BUTTON.borderColor,
     backgroundColor: SECONDARY_BUTTON.backgroundColor,
-    marginTop: SPACING.md,
   },
   pasteButtonPressed: {
     backgroundColor: COLORS.backgroundHover,
@@ -181,7 +206,7 @@ const styles = StyleSheet.create({
   pasteButtonText: {
     fontFamily: 'Lora_500Medium',
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS.textPrimary,
     textAlign: 'center',
   },
 });
