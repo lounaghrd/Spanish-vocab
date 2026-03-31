@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { supabase } from '../lib/supabase';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +35,50 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [devLink, setDevLink] = useState('');
+  const [devError, setDevError] = useState<string | null>(null);
+
+  async function handleDevPasteLink() {
+    setDevError(null);
+    const trimmed = devLink.trim();
+
+    // Case 1: raw Supabase verify URL from the email inbox
+    // e.g. https://xxx.supabase.co/auth/v1/verify?token=...&type=magiclink&...
+    if (trimmed.includes('/auth/v1/verify')) {
+      try {
+        const urlObj = new URL(trimmed);
+        const token = urlObj.searchParams.get('token');
+        if (!token) { setDevError('No token found in URL.'); return; }
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'magiclink',
+        });
+        if (error) setDevError(error.message);
+      } catch {
+        setDevError('Invalid URL format.');
+      }
+      return;
+    }
+
+    // Case 2: redirect URL with hash fragment (access_token=...&refresh_token=...)
+    const hashPart = trimmed.split('#')[1];
+    if (!hashPart) {
+      setDevError('Paste the magic link from your email inbox.');
+      return;
+    }
+    const params = new URLSearchParams(hashPart);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (!accessToken || !refreshToken) {
+      setDevError('Could not extract tokens from URL.');
+      return;
+    }
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) setDevError(error.message);
+  }
 
   const hasText = email.trim().length >= VALIDATION.emailInput.minCharacters;
   const isValidEmail = VALIDATION.emailInput.emailRegex.test(email.trim());
@@ -127,6 +172,27 @@ export default function LoginScreen() {
               {error && <Text style={styles.errorText}>{error}</Text>}
             </View>
           </View>
+          {/* DEV ONLY — paste magic link to authenticate in Expo Go */}
+          {__DEV__ && (
+            <View style={styles.devSection}>
+              <Text style={styles.devLabel}>Dev: paste magic link URL</Text>
+              <View style={styles.devInputRow}>
+                <TextInput
+                  style={styles.devInput}
+                  placeholder="Paste the magic link from your email..."
+                  placeholderTextColor="#aaa"
+                  value={devLink}
+                  onChangeText={setDevLink}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable style={styles.devButton} onPress={handleDevPasteLink}>
+                  <Text style={styles.devButtonText}>Go</Text>
+                </Pressable>
+              </View>
+              {devError && <Text style={styles.devErrorText}>{devError}</Text>}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -192,5 +258,48 @@ const styles = StyleSheet.create({
     fontSize: TEXT_INPUT.error.helperText.fontSize,
     lineHeight: 18,
     color: TEXT_INPUT.error.helperText.color,
+  },
+  devSection: {
+    width: '100%',
+    marginTop: 32,
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    paddingTop: 16,
+  },
+  devLabel: {
+    fontFamily: 'Lora_400Regular',
+    fontSize: 12,
+    color: '#888',
+  },
+  devInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  devInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontFamily: 'Lora_400Regular',
+    fontSize: 12,
+    color: '#333',
+  },
+  devButton: {
+    backgroundColor: '#333',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    justifyContent: 'center',
+  },
+  devButtonText: {
+    color: '#fff',
+    fontFamily: 'Lora_400Regular',
+    fontSize: 12,
+  },
+  devErrorText: {
+    fontFamily: 'Lora_400Regular',
+    fontSize: 11,
+    color: '#D4183D',
   },
 });

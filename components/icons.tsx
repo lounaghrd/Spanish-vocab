@@ -51,6 +51,21 @@ export function IconClose({ size = 24, color = '#191919' }: IconProps) {
   );
 }
 
+// ─── Arrow Right (long →) ──────────────────────────────────────────────────
+// Figma: "Icon/thin/forward arrow" — 22×22, white, used inside the arrow button
+export function IconArrowRight({ size = 22, color = '#FFFFFF' }: IconProps) {
+  const width = size;
+  const height = Math.round(size * (21 / 28));
+  return (
+    <Svg width={width} height={height} viewBox="0 0 28 21" fill="none">
+      <Path
+        d="M28 10.4995L17.5322 21L16.1549 19.6185L24.2714 11.4765H0V9.52256H24.2714L16.1549 1.38149L17.5322 0L28 10.4995Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 // ─── Arrow Left (long ←) ───────────────────────────────────────────────────
 // Figma: "icon=back arrow - long, weight=thin" — 28×21 wide-format arrow
 // A right-facing arrow (→) rotated 180°, rendered as a left-facing arrow (←)

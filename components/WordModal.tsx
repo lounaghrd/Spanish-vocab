@@ -6,15 +6,17 @@ import {
   Modal,
   Pressable,
   TextInput,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { IconClose } from './icons';
+import { WordCardTitle } from './WordCardTitle';
+import { ProgressBar } from './ProgressBar';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { normalizeAnswer } from '../db/queries';
 import type { UserWordWithWord } from '../db/queries';
+
+import ArrowButtonDefault from '../assets/icons/arrow-button-default.svg';
+import ArrowButtonHover from '../assets/icons/arrow-button-hover.svg';
 
 type ModalMode = 'view' | 'guess' | 'result';
 
@@ -26,16 +28,33 @@ type Props = {
   onSubmitGuess: (userWordId: string, guess: string) => void;
 };
 
+function nextReviewLabel(level: number): string {
+  if (level === 0) return 'You should review this word again right now.';
+  const map: Record<number, string> = {
+    1: 'Next review in 1 hour.',
+    2: 'Next review in 1 day.',
+    3: 'Next review in 2 days.',
+    4: 'Next review in 4 days.',
+    5: 'Next review in 7 days.',
+    6: 'Next review in 14 days.',
+    7: 'Next review in 30 days.',
+    8: 'Congratulations! This word is now in your long term memory.',
+  };
+  return map[level];
+}
+
 export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmitGuess }: Props) {
   const [mode, setMode] = useState<ModalMode>(() =>
     isDueForReview ? 'guess' : 'view'
   );
   const [guess, setGuess] = useState('');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [newLevel, setNewLevel] = useState<number | null>(null);
 
   const resetState = useCallback(() => {
     setGuess('');
     setIsCorrect(null);
+    setNewLevel(null);
     setMode(isDueForReview ? 'guess' : 'view');
   }, [isDueForReview]);
 
@@ -48,13 +67,19 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
   function handleSubmitGuess() {
     if (!userWord) return;
     const success = normalizeAnswer(guess) === normalizeAnswer(userWord.spanish_word);
+    const computed = success ? Math.min(userWord.level + 1, 8) : 0;
     setIsCorrect(success);
+    setNewLevel(computed);
     setMode('result');
     onSubmitGuess(userWord.id, guess);
   }
 
   const wordTypeLabel = userWord.type.charAt(0).toUpperCase() + userWord.type.slice(1);
-  const isGuessMode = mode === 'guess';
+
+  const titleState =
+    mode === 'result' && isCorrect === true ? 'correct' :
+    mode === 'result' && isCorrect === false ? 'incorrect' :
+    'default';
 
   return (
     <Modal
@@ -63,129 +88,85 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
       animationType="none"
       onRequestClose={onClose}
     >
-      {/* Full-screen backdrop — always covers entire screen, even behind keyboard */}
+      {/* Full-screen backdrop */}
       <Pressable style={styles.backdrop} onPress={onClose} />
 
-      {/* KeyboardAvoidingView fills the screen so the card shifts up when keyboard appears */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
         pointerEvents="box-none"
       >
-        {/* Overlay: centers the card */}
         <View style={styles.overlay} pointerEvents="box-none">
+          <View style={styles.card} onStartShouldSetResponder={() => true}>
 
-          {/* Card — absorbs its own touches so the backdrop doesn't fire */}
-          <View
-            style={styles.card}
-            onStartShouldSetResponder={() => true}
-          >
-            {/* ── Header ── */}
-            <View style={styles.header}>
-              <View style={styles.headerSpacer} />
-              <View style={styles.headerTitleContainer}>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                  {userWord.spanish_word}
-                </Text>
-                {isGuessMode && BlurView && (
-                  <BlurView
-                    intensity={80}
-                    tint="dark"
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                )}
+            {/* Title */}
+            <WordCardTitle
+              word={userWord.spanish_word}
+              state={titleState}
+              masked={mode === 'guess'}
+            />
+
+            {/* Body — VIEW mode */}
+            {mode === 'view' && (
+              <View style={styles.bodyView}>
+                <View style={styles.wordClueRow}>
+                  <Text style={styles.bodyText}>{userWord.english_translation}</Text>
+                  <Text style={styles.bodyText}>·</Text>
+                  <Text style={styles.bodyText}>{wordTypeLabel}</Text>
+                </View>
+                <View style={styles.separator} />
+                <Text style={styles.bodyText}>E.g. {userWord.example_sentence}</Text>
               </View>
-              <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
-                <IconClose size={20} color={Colors.textPrimary} />
-              </Pressable>
-            </View>
+            )}
 
-            {/* ── Body ── */}
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.bodyContent}
-            >
-              {/* VIEW mode */}
-              {mode === 'view' && (
-                <View style={styles.section}>
-                  <View style={styles.translationBlock}>
-                    <Text style={styles.bodyText}>[EN] {userWord.english_translation}</Text>
-                    <Text style={styles.bodyText}>{wordTypeLabel}.</Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <Text style={styles.bodyText}>E.g. {userWord.example_sentence}</Text>
+            {/* Body — GUESS mode */}
+            {mode === 'guess' && (
+              <View style={styles.bodyGuess}>
+                <View style={styles.wordClueRow}>
+                  <Text style={styles.bodyText}>{userWord.english_translation}</Text>
+                  <Text style={styles.bodyText}>·</Text>
+                  <Text style={styles.bodyText}>{wordTypeLabel}</Text>
                 </View>
-              )}
-
-              {/* GUESS mode */}
-              {mode === 'guess' && (
-                <View style={styles.section}>
-                  <View style={styles.translationBlock}>
-                    <Text style={styles.bodyText}>[EN] {userWord.english_translation}</Text>
-                    <Text style={styles.bodyText}>{wordTypeLabel}.</Text>
-                  </View>
-                  <View style={styles.guessBlock}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Guess the word here..."
-                      placeholderTextColor={Colors.textDisabled}
-                      value={guess}
-                      onChangeText={setGuess}
-                      autoFocus
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      onSubmitEditing={handleSubmitGuess}
-                      returnKeyType="done"
-                    />
+                <View style={styles.textFieldContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Guess the word here..."
+                    placeholderTextColor={Colors.textSecondary}
+                    value={guess}
+                    onChangeText={setGuess}
+                    autoFocus
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onSubmitEditing={handleSubmitGuess}
+                    returnKeyType="done"
+                  />
+                  {guess.trim().length > 0 && (
                     <Pressable
-                      style={({ pressed }) => [
-                        styles.outlinedButton,
-                        pressed && styles.outlinedButtonPressed,
-                        guess.trim().length === 0 && styles.outlinedButtonDisabled,
-                      ]}
                       onPress={handleSubmitGuess}
-                      disabled={guess.trim().length === 0}
+                      hitSlop={4}
+                      style={styles.arrowButton}
                     >
-                      <Text style={[
-                        styles.outlinedButtonText,
-                        guess.trim().length === 0 && styles.outlinedButtonTextDisabled,
-                      ]}>
-                        Submit
-                      </Text>
+                      {({ pressed }) =>
+                        pressed ? (
+                          <ArrowButtonHover width={32} height={32} />
+                        ) : (
+                          <ArrowButtonDefault width={32} height={32} />
+                        )
+                      }
                     </Pressable>
-                  </View>
+                  )}
                 </View>
-              )}
+              </View>
+            )}
 
-              {/* RESULT mode */}
-              {mode === 'result' && (
-                <View style={styles.section}>
-                  <View style={styles.translationBlock}>
-                    <Text style={styles.bodyText}>[EN] {userWord.english_translation}</Text>
-                    <Text style={styles.bodyText}>{wordTypeLabel}.</Text>
-                  </View>
-                  <View style={[
-                    styles.resultBox,
-                    isCorrect ? styles.resultBoxCorrect : styles.resultBoxIncorrect,
-                  ]}>
-                    <Text style={[
-                      styles.resultLabel,
-                      isCorrect ? styles.resultLabelCorrect : styles.resultLabelIncorrect,
-                    ]}>
-                      {isCorrect ? 'Correct' : 'Incorrect'}
-                    </Text>
-                    <View style={styles.resultDetails}>
-                      <Text style={styles.bodyText}>
-                        <Text style={styles.correctAnswerPrefix}>Correct answer: </Text>
-                        <Text style={styles.correctAnswerWord}>{userWord.spanish_word}</Text>
-                      </Text>
-                      <View style={styles.resultDivider} />
-                      <Text style={styles.bodyText}>E.g. {userWord.example_sentence}</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </ScrollView>
+            {/* Body — RESULT mode */}
+            {mode === 'result' && newLevel !== null && (
+              <View style={styles.bodyResult}>
+                <ProgressBar level={newLevel} />
+                <Text style={styles.nextReviewText}>{nextReviewLabel(newLevel)}</Text>
+              </View>
+            )}
+
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -212,54 +193,34 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderWidth: 2,
     borderColor: Colors.outline,
-    // Hard drop-shadow matching Figma: 6px right, 8px down, 0 blur
     shadowColor: '#000',
     shadowOffset: { width: 6, height: 8 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 8,
+    paddingTop: 32,
+    paddingHorizontal: 48,
+    paddingBottom: 48,
+    gap: 32,
+    alignItems: 'center',
   },
-  header: {
+  bodyView: {
+    alignSelf: 'stretch',
+    gap: 16,
+  },
+  bodyGuess: {
+    alignSelf: 'stretch',
+    gap: 24,
+  },
+  bodyResult: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wordClueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.m,
-    borderBottomWidth: 2,
-    borderBottomColor: Colors.outline,
-  },
-  headerSpacer: {
-    width: 30,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  headerTitle: {
-    fontFamily: FontFamily.playfairBold,
-    fontSize: FontSize.heading2,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 38,
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bodyContent: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxl,
-  },
-  section: {
-    gap: Spacing.m,
-  },
-  translationBlock: {
-    gap: Spacing.xxs,
+    gap: 8,
   },
   bodyText: {
     fontFamily: FontFamily.loraRegular,
@@ -267,92 +228,42 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 24,
   },
-  divider: {
+  separator: {
     height: 1,
-    backgroundColor: Colors.outlineLight,
-    opacity: 0.4,
-    marginVertical: Spacing.xs,
+    backgroundColor: Colors.outline,
+    opacity: 0.15,
+    alignSelf: 'stretch',
   },
-  guessBlock: {
-    gap: Spacing.s,
-    paddingTop: Spacing.s,
+  textFieldContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    height: 48,
+    borderWidth: 2,
+    borderColor: Colors.outline,
+    backgroundColor: Colors.background,
+    paddingVertical: 0,
+    paddingHorizontal: 8,
   },
   textInput: {
-    backgroundColor: Colors.background,
-    borderWidth: 2,
-    borderColor: Colors.outline,
-    paddingHorizontal: Spacing.m,
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 8,
+    paddingVertical: 0,
     fontFamily: FontFamily.loraRegular,
     fontSize: FontSize.body,
     color: Colors.textPrimary,
-    height: 48,
   },
-  outlinedButton: {
-    backgroundColor: Colors.background,
-    borderWidth: 2,
-    borderColor: Colors.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.s,
+  arrowButton: {
+    width: 32,
+    height: 32,
   },
-  outlinedButtonPressed: {
-    backgroundColor: Colors.backgroundSecondary,
-  },
-  outlinedButtonDisabled: {
-    opacity: 0.4,
-  },
-  outlinedButtonText: {
-    fontFamily: FontFamily.loraMedium,
-    fontSize: FontSize.bodyLarge,
+  nextReviewText: {
+    fontFamily: FontFamily.loraRegular,
+    fontSize: FontSize.body,
     color: Colors.textPrimary,
-    lineHeight: 28,
-  },
-  outlinedButtonTextDisabled: {
-    color: Colors.textSecondary,
-  },
-  resultBox: {
-    borderWidth: 2,
-    padding: Spacing.m,
-    gap: Spacing.m,
-  },
-  resultBoxCorrect: {
-    backgroundColor: Colors.successBackground,
-    borderColor: Colors.successMain,
-  },
-  resultBoxIncorrect: {
-    backgroundColor: Colors.errorBackground,
-    borderColor: Colors.errorMain,
-  },
-  resultLabel: {
-    fontFamily: FontFamily.loraMedium,
-    fontSize: FontSize.bodyLarge,
-    lineHeight: 28,
+    lineHeight: 24,
     textAlign: 'center',
-  },
-  resultLabelCorrect: {
-    color: Colors.successText,
-  },
-  resultLabelIncorrect: {
-    color: Colors.errorText,
-  },
-  resultDetails: {
-    gap: Spacing.m,
-  },
-  correctAnswerPrefix: {
-    fontFamily: FontFamily.loraRegular,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-  },
-  correctAnswerWord: {
-    fontFamily: FontFamily.loraMedium,
-    fontSize: FontSize.body,
-    color: Colors.textPrimary,
-    lineHeight: 24,
-  },
-  resultDivider: {
-    height: 1,
-    backgroundColor: Colors.outlineLight,
-    opacity: 0.5,
   },
 });

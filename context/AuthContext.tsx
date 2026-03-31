@@ -43,9 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for auth state changes (handles session restore + login/logout)
   useEffect(() => {
-    // Get the initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null);
+    // Get the initial session — handle stale/invalid refresh tokens gracefully
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Token is expired or not found — clear it so the user gets sent to login
+        supabase.auth.signOut();
+        setUserId(null);
+      } else {
+        setUserId(session?.user?.id ?? null);
+      }
       setIsLoading(false);
     });
 

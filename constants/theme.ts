@@ -12,7 +12,7 @@ export const Colors = {
   outline: '#262626',
   outlineLight: '#655F58',
   successBackground: '#D2FCC6',
-  successMain: '#36B911',
+  successMain: '#30B20D',
   successText: '#187000',
   errorBackground: '#FFBECB',
   errorMain: '#D4183D',
