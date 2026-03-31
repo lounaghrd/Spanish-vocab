@@ -17,6 +17,7 @@ type Props = {
   onStartLearning: (wordId: string) => void;
   onMarkAsLearned: (wordId: string) => void;
   onRemoveWord: (wordId: string) => void;
+  onPress?: () => void;
 };
 
 export function LibraryWordItem({
@@ -24,6 +25,7 @@ export function LibraryWordItem({
   onStartLearning,
   onMarkAsLearned,
   onRemoveWord,
+  onPress,
 }: Props) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -37,7 +39,7 @@ export function LibraryWordItem({
   }
 
   return (
-    <View style={styles.row}>
+    <Pressable style={styles.row} onPress={onPress}>
       {/* Text content */}
       <View style={styles.textContainer}>
         <Text style={styles.spanishWord} numberOfLines={1}>
@@ -74,7 +76,7 @@ export function LibraryWordItem({
 
       {word.variant === 'in_progress' && (
         <View style={styles.inProgressRight}>
-          <ProgressBar level={word.level} />
+          <ProgressBar level={word.level} size="small" />
           <Pressable
             onPress={() => onRemoveWord(word.id)}
             style={({ pressed }) => [
@@ -83,7 +85,7 @@ export function LibraryWordItem({
               pressed && styles.actionButtonAccentPressed,
             ]}
           >
-            <IconCycle size={15} color={Colors.textInverted} />
+            <IconCycle size={22} color={Colors.textInverted} />
           </Pressable>
         </View>
       )}
@@ -97,10 +99,10 @@ export function LibraryWordItem({
             pressed && styles.actionButtonLearnedPressed,
           ]}
         >
-          <IconCheck size={15} color={Colors.textInverted} />
+          <IconCheck size={13} color={Colors.textInverted} />
         </Pressable>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     paddingLeft: Spacing.xxs,
-    paddingRight: Spacing.m,
+    paddingRight: Spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.outlineLight,
   },

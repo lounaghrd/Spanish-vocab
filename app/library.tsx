@@ -14,6 +14,7 @@ import { IconArrowLeft, IconMagnifier } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { LibraryWordItem } from '../components/LibraryWordItem';
 import { CategoryCard } from '../components/CategoryCard';
+import { WordModal } from '../components/WordModal';
 import {
   getLibraryWords,
   getCategories,
@@ -23,6 +24,7 @@ import {
   markWordAsLearned,
   type Category,
   type LibraryWord,
+  type UserWordWithWord,
   type UserWordInfo,
 } from '../db/queries';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +37,8 @@ export default function LibraryScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchResults, setSearchResults] = useState<LibraryWord[]>([]);
   const [userWordMap, setUserWordMap] = useState<Map<string, UserWordInfo>>(new Map());
+  const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const isSearching = search.trim().length > 0;
 
@@ -107,6 +111,34 @@ export default function LibraryScreen() {
     });
   }
 
+  function handleWordPress(word: LibraryWord) {
+    const userWordInfo = userWordMap.get(word.id);
+    const asUserWord: UserWordWithWord = {
+      id: word.id,
+      word_id: word.id,
+      user_id: userId ?? '',
+      level: userWordInfo?.level ?? 0,
+      last_reviewed_at: null,
+      next_review_at: '9999-12-31T00:00:00Z',
+      suspended: userWordInfo?.suspended ?? false,
+      marked_as_learned: userWordInfo?.marked_as_learned ?? false,
+      successful_guesses: 0,
+      failed_guesses: 0,
+      created_at: '',
+      spanish_word: word.spanish_word,
+      english_translation: word.english_translation,
+      type: word.type,
+      category_id: word.category_id,
+      sub_category_id: word.sub_category_id,
+      example_sentence: word.example_sentence,
+      is_active: word.is_active,
+      category_name: word.category_name,
+      sub_category_name: word.sub_category_name,
+    };
+    setSelectedWord(asUserWord);
+    setModalVisible(true);
+  }
+
   function handleCategoryPress(category: Category) {
     router.push({
       pathname: '/category/[id]',
@@ -159,6 +191,7 @@ export default function LibraryScreen() {
                 onStartLearning={handleStartLearning}
                 onMarkAsLearned={handleMarkAsLearned}
                 onRemoveWord={handleRemoveWord}
+                onPress={() => handleWordPress(item)}
               />
             )}
             contentContainerStyle={[styles.listContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
@@ -189,6 +222,13 @@ export default function LibraryScreen() {
           style={styles.list}
         />
       )}
+      <WordModal
+        userWord={selectedWord}
+        isDueForReview={false}
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setSelectedWord(null); }}
+        onSubmitGuess={() => {}}
+      />
     </SafeAreaView>
   );
 }
@@ -247,7 +287,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.loraRegular,
     fontSize: FontSize.body,
     color: Colors.textPrimary,
-    lineHeight: 24,
+    paddingVertical: 0,
   },
   list: {
     flex: 1,

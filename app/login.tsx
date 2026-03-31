@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'expo-router';
@@ -155,9 +154,7 @@ export default function LoginScreen() {
                     style={styles.arrowButton}
                   >
                     {({ pressed }) => (
-                      loading ? (
-                        <ActivityIndicator size="small" color={COLORS.textInverted} />
-                      ) : !arrowEnabled ? (
+                      !arrowEnabled ? (
                         <ArrowButtonDisabled width={32} height={32} />
                       ) : pressed ? (
                         <ArrowButtonHover width={32} height={32} />
@@ -226,6 +223,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     width: '100%',
+    height: 48,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -233,8 +231,6 @@ const styles = StyleSheet.create({
     borderColor: TEXT_INPUT.default.input.borderColor,
     borderRadius: TEXT_INPUT.default.input.borderRadius,
     backgroundColor: TEXT_INPUT.default.input.backgroundColor,
-    paddingTop: TEXT_INPUT.default.input.padding.top,
-    paddingBottom: TEXT_INPUT.default.input.padding.bottom,
     paddingLeft: TEXT_INPUT.default.input.padding.left,
     paddingRight: TEXT_INPUT.default.input.padding.right,
   },

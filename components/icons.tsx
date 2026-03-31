@@ -123,53 +123,26 @@ export function IconSettings({ size = 24, color = '#191919' }: IconProps) {
 }
 
 // ─── Cycle (↺) ────────────────────────────────────────────────────────────
-// Figma node 527:2923 — two curved arrows forming a circular refresh symbol
+// Figma: "Add word button=In list" icon — filled cycle/refresh symbol
 export function IconCycle({ size = 24, color = '#191919' }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 26 26" fill="none">
       <Path
-        d="M3.75 9C3.75 6.1 6.1 3.75 9 3.75C10.95 3.75 12.65 4.82 13.5 6.38"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
-        strokeLinejoin={LJ}
-      />
-      <Path
-        d="M13.5 3.75V6.75H10.5"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
-        strokeLinejoin={LJ}
-      />
-      <Path
-        d="M14.25 9C14.25 11.9 11.9 14.25 9 14.25C7.05 14.25 5.35 13.18 4.5 11.62"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
-        strokeLinejoin={LJ}
-      />
-      <Path
-        d="M4.5 14.25V11.25H7.5"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
-        strokeLinejoin={LJ}
+        d="M12.9869 20.9554C10.7944 20.9554 8.91005 20.1772 7.3338 18.6208C5.75773 17.0646 4.99678 15.1606 5.05095 12.9087V12.9022L3.60443 14.3487L2.15845 12.8962L6.17491 8.87327L10.1914 12.8962L8.74538 14.3487L7.29886 12.9022V12.8892C7.26275 14.5303 7.8074 15.9102 8.9328 17.0291C10.058 18.148 11.4094 18.7075 12.9869 18.7075C13.3971 18.7075 13.7882 18.6681 14.1602 18.5894C14.5319 18.5107 14.8937 18.3926 15.2454 18.2352L16.8818 19.865C16.3098 20.1971 15.6976 20.4618 15.0452 20.6591C14.3929 20.8566 13.7068 20.9554 12.9869 20.9554ZM19.8314 17.1331L15.8084 13.1164L17.2609 11.6639L18.7074 13.1107V13.1237C18.7436 11.4825 18.1978 10.1025 17.0703 8.98377C15.9429 7.86486 14.5904 7.30541 13.0129 7.30541C12.6207 7.30541 12.2342 7.34477 11.8532 7.42349C11.4724 7.50222 11.1061 7.62021 10.7544 7.77747L9.12455 6.14137C9.69655 5.80933 10.3122 5.54563 10.9714 5.35027C11.6306 5.15509 12.3111 5.0575 13.0129 5.0575C15.2234 5.0575 17.1134 5.8356 18.6828 7.39181C20.252 8.9482 21.0095 10.8523 20.9554 13.1042V13.1107L22.3954 11.6639L23.8479 13.1164L19.8314 17.1331Z"
+        fill={color}
       />
     </Svg>
   );
 }
 
 // ─── Check (✓) ────────────────────────────────────────────────────────────
-// Figma node 527:2250 — a checkmark / tick mark
+// Figma: "Add word button=Learned" icon — filled checkmark
 export function IconCheck({ size = 24, color = '#191919' }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
       <Path
-        d="M3.75 9.75L7.5 13.5L14.25 4.5"
-        stroke={color}
-        strokeWidth={SW}
-        strokeLinecap={LC}
-        strokeLinejoin={LJ}
+        d="M16 3.82054L6.01165 13.8667L0 7.79072L2.06382 5.71503L6.14414 10.1031L14.0687 2.13328L16 3.82054Z"
+        fill={color}
       />
     </Svg>
   );

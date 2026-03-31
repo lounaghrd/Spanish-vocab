@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { IconArrowLeft } from '../../components/icons';
 import { SubCategoryPill } from '../../components/SubCategoryPill';
 import { LibraryWordItem } from '../../components/LibraryWordItem';
+import { WordModal } from '../../components/WordModal';
 import { getCategoryIcon } from '../../constants/categoryIcons';
 import {
   Colors,
@@ -30,6 +31,7 @@ import {
   type LibraryWord,
   type SubCategory,
   type UserWordInfo,
+  type UserWordWithWord,
 } from '../../db/queries';
 import { useAuth } from '../../context/AuthContext';
 
@@ -42,6 +44,8 @@ export default function CategoryPage() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [words, setWords] = useState<LibraryWord[]>([]);
   const [userWordMap, setUserWordMap] = useState<Map<string, UserWordInfo>>(new Map());
+  const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const IconComponent = getCategoryIcon(name ?? '', 'emphasized');
 
@@ -102,6 +106,34 @@ export default function CategoryPage() {
     });
   }
 
+  function handleWordPress(word: LibraryWord) {
+    const userWordInfo = userWordMap.get(word.id);
+    const asUserWord: UserWordWithWord = {
+      id: word.id,
+      word_id: word.id,
+      user_id: userId ?? '',
+      level: userWordInfo?.level ?? 0,
+      last_reviewed_at: null,
+      next_review_at: '9999-12-31T00:00:00Z',
+      suspended: userWordInfo?.suspended ?? false,
+      marked_as_learned: userWordInfo?.marked_as_learned ?? false,
+      successful_guesses: 0,
+      failed_guesses: 0,
+      created_at: '',
+      spanish_word: word.spanish_word,
+      english_translation: word.english_translation,
+      type: word.type,
+      category_id: word.category_id,
+      sub_category_id: word.sub_category_id,
+      example_sentence: word.example_sentence,
+      is_active: word.is_active,
+      category_name: word.category_name,
+      sub_category_name: word.sub_category_name,
+    };
+    setSelectedWord(asUserWord);
+    setModalVisible(true);
+  }
+
   function handleRemoveWord(wordId: string) {
     if (!userId) return;
     const updated = new Map(userWordMap);
@@ -128,7 +160,7 @@ export default function CategoryPage() {
         <View style={styles.headerCenter}>
           {IconComponent && (
             <View style={styles.headerIcon}>
-              <IconComponent width={32} height={32} />
+              <IconComponent width={28} height={28} />
             </View>
           )}
           <Text style={styles.headerTitle} numberOfLines={2}>
@@ -168,10 +200,18 @@ export default function CategoryPage() {
             onStartLearning={handleStartLearning}
             onMarkAsLearned={handleMarkAsLearned}
             onRemoveWord={handleRemoveWord}
+            onPress={() => handleWordPress(item)}
           />
         )}
         contentContainerStyle={[styles.listContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
         style={styles.list}
+      />
+      <WordModal
+        userWord={selectedWord}
+        isDueForReview={false}
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setSelectedWord(null); }}
+        onSubmitGuess={() => {}}
       />
     </SafeAreaView>
   );
@@ -207,8 +247,8 @@ const styles = StyleSheet.create({
     gap: Spacing.m,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     flexShrink: 0,
   },
   headerTitle: {
