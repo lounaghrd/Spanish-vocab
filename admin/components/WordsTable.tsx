@@ -47,14 +47,14 @@ export function WordsTable({ words, categories, subCategories }: Props) {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Words</h1>
           <p className="text-sm text-gray-500 mt-0.5">{words.length} words in the library</p>
         </div>
         <button
           onClick={() => { setEditingWord(undefined); setShowForm(true); }}
-          className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
+          className="self-start sm:self-auto px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
         >
           + New Word
         </button>
@@ -67,7 +67,7 @@ export function WordsTable({ words, categories, subCategories }: Props) {
           placeholder="Search by Spanish, English, or category…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
       </div>
 

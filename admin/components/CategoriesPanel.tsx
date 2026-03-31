@@ -48,14 +48,14 @@ export function CategoriesPanel({ categories, subCategories }: Props) {
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
           <p className="text-sm text-gray-500 mt-0.5">{categories.length} categories</p>
         </div>
         <button
           onClick={() => { setShowNewCategoryForm(true); setNewCategoryName(''); }}
-          className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
+          className="self-start sm:self-auto px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
         >
           + New Category
         </button>
@@ -141,19 +141,19 @@ export function CategoriesPanel({ categories, subCategories }: Props) {
                   <span className="flex-1 font-semibold text-gray-900">{cat.name}</span>
                 )}
 
-                <span className="text-xs text-gray-400">
-                  {cat.sub_category_count} sub-categories · {cat.word_count} words
+                <span className="hidden sm:inline text-xs text-gray-400 shrink-0">
+                  {cat.sub_category_count} sub-cat · {cat.word_count} words
                 </span>
 
                 {editingCategoryId === cat.id ? (
                   <>
                     <button
                       onClick={() => { run(() => updateCategory(cat.id, editingCategoryName)); setEditingCategoryId(null); }}
-                      className="text-xs text-green-600 font-medium"
+                      className="text-sm py-1 px-2 text-green-600 font-medium"
                     >
                       Save
                     </button>
-                    <button onClick={() => setEditingCategoryId(null)} className="text-xs text-gray-400">
+                    <button onClick={() => setEditingCategoryId(null)} className="text-sm py-1 px-2 text-gray-400">
                       Cancel
                     </button>
                   </>
@@ -161,13 +161,13 @@ export function CategoriesPanel({ categories, subCategories }: Props) {
                   <>
                     <button
                       onClick={() => { setEditingCategoryId(cat.id); setEditingCategoryName(cat.name); }}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-sm py-1 px-2 text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Rename
                     </button>
                     <button
                       onClick={() => setDeletingCategory(cat)}
-                      className="text-xs text-red-500 hover:text-red-700 font-medium"
+                      className="text-sm py-1 px-2 text-red-500 hover:text-red-700 font-medium"
                     >
                       Delete
                     </button>
@@ -205,17 +205,17 @@ export function CategoriesPanel({ categories, subCategories }: Props) {
                         <span className="flex-1 text-sm text-gray-700">{sc.name}</span>
                       )}
 
-                      <span className="text-xs text-gray-400">{sc.word_count} words</span>
+                      <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{sc.word_count} words</span>
 
                       {editingSubCategoryId === sc.id ? (
                         <>
                           <button
                             onClick={() => { run(() => updateSubCategory(sc.id, editingSubCategoryName)); setEditingSubCategoryId(null); }}
-                            className="text-xs text-green-600 font-medium"
+                            className="text-sm py-1 px-2 text-green-600 font-medium"
                           >
                             Save
                           </button>
-                          <button onClick={() => setEditingSubCategoryId(null)} className="text-xs text-gray-400">
+                          <button onClick={() => setEditingSubCategoryId(null)} className="text-sm py-1 px-2 text-gray-400">
                             Cancel
                           </button>
                         </>
@@ -223,13 +223,13 @@ export function CategoriesPanel({ categories, subCategories }: Props) {
                         <>
                           <button
                             onClick={() => { setEditingSubCategoryId(sc.id); setEditingSubCategoryName(sc.name); }}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-sm py-1 px-2 text-blue-600 hover:text-blue-800 font-medium"
                           >
                             Rename
                           </button>
                           <button
                             onClick={() => setDeletingSubCategory(sc)}
-                            className="text-xs text-red-500 hover:text-red-700 font-medium"
+                            className="text-sm py-1 px-2 text-red-500 hover:text-red-700 font-medium"
                           >
                             Delete
                           </button>

@@ -32,13 +32,13 @@ export function UsersTable({ users }: { users: UserListItem[] }) {
         <p className="text-sm text-gray-500 mt-1">{users.length} users</p>
       </div>
 
-      <div className="px-6 py-3 border-b border-gray-200 shrink-0">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-200 shrink-0">
         <input
           type="text"
           placeholder="Search by email or name…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
         />
       </div>
 
@@ -46,30 +46,30 @@ export function UsersTable({ users }: { users: UserListItem[] }) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 sticky top-0">
             <tr className="text-left text-gray-500 text-xs uppercase tracking-wider">
-              <th className="px-6 py-3 font-medium">Email</th>
-              <th className="px-6 py-3 font-medium">Name</th>
-              <th className="px-6 py-3 font-medium">Created</th>
-              <th className="px-6 py-3 font-medium">Last Activity</th>
+              <th className="px-4 sm:px-6 py-3 font-medium">Email</th>
+              <th className="px-4 sm:px-6 py-3 font-medium">Name</th>
+              <th className="hidden sm:table-cell px-6 py-3 font-medium">Created</th>
+              <th className="hidden sm:table-cell px-6 py-3 font-medium">Last Activity</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-3">
+                <td className="px-4 sm:px-6 py-3 max-w-[160px] sm:max-w-none">
                   <Link
                     href={`/users/${user.id}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
                   >
                     {user.email}
                   </Link>
                 </td>
-                <td className="px-6 py-3 text-gray-700">
+                <td className="px-4 sm:px-6 py-3 text-gray-700">
                   {user.first_name || user.last_name
                     ? `${user.first_name} ${user.last_name}`.trim()
                     : '—'}
                 </td>
-                <td className="px-6 py-3 text-gray-500">{formatDate(user.created_at)}</td>
-                <td className="px-6 py-3 text-gray-500">{formatDate(user.last_activity)}</td>
+                <td className="hidden sm:table-cell px-6 py-3 text-gray-500">{formatDate(user.created_at)}</td>
+                <td className="hidden sm:table-cell px-6 py-3 text-gray-500">{formatDate(user.last_activity)}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
