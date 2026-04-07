@@ -10,7 +10,7 @@ import {
 import IllustrationEmpty from '../assets/illustration-empty.svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { IconArrowLeft, IconMagnifier } from '../components/icons';
+import { IconArrowLeft, IconMagnifier, IconShuffle } from '../components/icons';
 import { Colors, Spacing, FontFamily, FontSize } from '../constants/theme';
 import { LibraryWordItem } from '../components/LibraryWordItem';
 import { CategoryCard } from '../components/CategoryCard';
@@ -19,6 +19,7 @@ import {
   getLibraryWords,
   getCategories,
   getUserWordMap,
+  getRandomEligibleWord,
   addWordToUserList,
   removeWordFromUserList,
   markWordAsLearned,
@@ -39,6 +40,8 @@ export default function LibraryScreen() {
   const [userWordMap, setUserWordMap] = useState<Map<string, UserWordInfo>>(new Map());
   const [selectedWord, setSelectedWord] = useState<UserWordWithWord | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [hasEligibleWords, setHasEligibleWords] = useState(true);
+  const [modalContext, setModalContext] = useState<'review' | 'library'>('review');
 
   const isSearching = search.trim().length > 0;
 
@@ -50,6 +53,7 @@ export default function LibraryScreen() {
     // Fetch user's word map from Supabase for variant computation
     const wordMap = await getUserWordMap(userId);
     setUserWordMap(wordMap);
+    setHasEligibleWords(getRandomEligibleWord(wordMap) !== null);
 
     if (search.trim().length > 0) {
       const words = getLibraryWords(wordMap, search);
@@ -73,10 +77,12 @@ export default function LibraryScreen() {
     const existing = updated.get(wordId);
     updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: false });
     setUserWordMap(updated);
+    setHasEligibleWords(getRandomEligibleWord(updated) !== null);
     refreshSearchResults(updated);
 
     addWordToUserList(userId, wordId).catch(() => {
       setUserWordMap(userWordMap);
+      setHasEligibleWords(getRandomEligibleWord(userWordMap) !== null);
       refreshSearchResults(userWordMap);
     });
   }
@@ -87,10 +93,12 @@ export default function LibraryScreen() {
     const existing = updated.get(wordId);
     updated.set(wordId, { level: existing?.level ?? 0, suspended: false, marked_as_learned: true });
     setUserWordMap(updated);
+    setHasEligibleWords(getRandomEligibleWord(updated) !== null);
     refreshSearchResults(updated);
 
     markWordAsLearned(userId, wordId).catch(() => {
       setUserWordMap(userWordMap);
+      setHasEligibleWords(getRandomEligibleWord(userWordMap) !== null);
       refreshSearchResults(userWordMap);
     });
   }
@@ -109,6 +117,13 @@ export default function LibraryScreen() {
       setUserWordMap(userWordMap);
       refreshSearchResults(userWordMap);
     });
+  }
+
+  function handleSurpriseMe() {
+    const word = getRandomEligibleWord(userWordMap);
+    if (!word) { setHasEligibleWords(false); return; }
+    setModalContext('library');
+    handleWordPress(word);
   }
 
   function handleWordPress(word: LibraryWord) {
@@ -218,6 +233,24 @@ export default function LibraryScreen() {
               onPress={() => handleCategoryPress(item)}
             />
           )}
+          ListHeaderComponent={() => (
+            <View style={styles.surpriseHeader}>
+              {hasEligibleWords ? (
+                <>
+                  <Pressable
+                    style={({ pressed }) => [styles.surpriseCard, pressed && styles.surpriseCardPressed]}
+                    onPress={handleSurpriseMe}
+                  >
+                    <IconShuffle size={28} color={Colors.textPrimary} />
+                    <Text style={styles.surpriseCardText}>Suggest random word</Text>
+                  </Pressable>
+                  <Text style={styles.orSeparator}>Or browse by category</Text>
+                </>
+              ) : (
+                <Text style={styles.noEligibleText}>You've added all available words!</Text>
+              )}
+            </View>
+          )}
           contentContainerStyle={[styles.gridContent, { paddingBottom: Spacing.xxl + insets.bottom }]}
           style={styles.list}
         />
@@ -226,7 +259,15 @@ export default function LibraryScreen() {
         userWord={selectedWord}
         isDueForReview={false}
         visible={modalVisible}
-        onClose={() => { setModalVisible(false); setSelectedWord(null); }}
+        context={modalContext}
+        onStartLearning={handleStartLearning}
+        onMarkAsLearned={handleMarkAsLearned}
+        onShowAnother={() => {
+          const word = getRandomEligibleWord(userWordMap);
+          if (!word) { setHasEligibleWords(false); setModalVisible(false); setSelectedWord(null); return; }
+          handleWordPress(word);
+        }}
+        onClose={() => { setModalVisible(false); setSelectedWord(null); setModalContext('review'); }}
         onSubmitGuess={() => {}}
       />
     </SafeAreaView>
@@ -304,6 +345,42 @@ const styles = StyleSheet.create({
   },
   gridRow: {
     gap: Spacing.s,
+  },
+  surpriseHeader: {
+    gap: Spacing.m,
+    paddingBottom: Spacing.m,
+  },
+  surpriseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.s,
+    borderWidth: 2,
+    borderColor: Colors.outline,
+    backgroundColor: Colors.background,
+    paddingVertical: Spacing.m,
+    paddingHorizontal: Spacing.m,
+  },
+  surpriseCardPressed: {
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  surpriseCardText: {
+    fontFamily: FontFamily.loraMedium,
+    fontSize: FontSize.body,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  orSeparator: {
+    fontFamily: FontFamily.loraRegular,
+    fontSize: FontSize.small,
+    color: '#605752',
+    textAlign: 'center',
+  },
+  noEligibleText: {
+    fontFamily: FontFamily.loraRegular,
+    fontSize: FontSize.small,
+    color: '#605752',
+    textAlign: 'center',
   },
   emptyContainer: {
     alignItems: 'center',

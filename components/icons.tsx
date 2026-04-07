@@ -148,6 +148,29 @@ export function IconCheck({ size = 24, color = '#191919' }: IconProps) {
   );
 }
 
+// ─── Shuffle (⇄) ───────────────────────────────────────────────────────────
+// Two crossing streams with arrowheads — classic shuffle symbol
+export function IconShuffle({ size = 24, color = '#191919' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3,7 L9,7 L15,17 L21,17 M17,14 L21,17 L17,20"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+      <Path
+        d="M3,17 L9,17 L15,7 L21,7 M17,4 L21,7 L17,10"
+        stroke={color}
+        strokeWidth={SW}
+        strokeLinecap={LC}
+        strokeLinejoin={LJ}
+      />
+    </Svg>
+  );
+}
+
 // ─── Magnifier (Q) ─────────────────────────────────────────────────────────
 // Figma: "icon=magnifier, weight=thin" — circle lens + diagonal handle
 export function IconMagnifier({ size = 24, color = '#191919' }: IconProps) {

@@ -397,6 +397,34 @@ export function getLibraryWords(
   });
 }
 
+export function getRandomEligibleWord(userWordMap: Map<string, UserWordInfo>): LibraryWord | null {
+  const db = getDb();
+  const rows = db.getAllSync<Omit<LibraryWord, 'is_in_list'>>(
+    `SELECT
+      w.*,
+      c.name as category_name,
+      sc.name as sub_category_name
+    FROM word w
+    LEFT JOIN category c ON w.category_id = c.id
+    LEFT JOIN sub_category sc ON w.sub_category_id = sc.id
+    WHERE w.is_active = 1`
+  );
+
+  const eligible = rows.filter((row) => {
+    const info = userWordMap.get(row.id);
+    if (!info) return true;
+    return info.suspended;
+  }).map((row) => ({
+    ...row,
+    is_in_list: 0,
+    variant: 'to_add' as WordVariant,
+    level: 0,
+  }));
+
+  if (eligible.length === 0) return null;
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
 export function getCategories(): Category[] {
   const db = getDb();
   return db.getAllSync<Category>(

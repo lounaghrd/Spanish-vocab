@@ -26,6 +26,10 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onSubmitGuess: (userWordId: string, guess: string) => void;
+  context?: 'review' | 'library';
+  onStartLearning?: (wordId: string) => void;
+  onMarkAsLearned?: (wordId: string) => void;
+  onShowAnother?: () => void;
 };
 
 function nextReviewLabel(level: number): string {
@@ -43,9 +47,9 @@ function nextReviewLabel(level: number): string {
   return map[level];
 }
 
-export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmitGuess }: Props) {
+export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmitGuess, context = 'review', onStartLearning, onMarkAsLearned, onShowAnother }: Props) {
   const [mode, setMode] = useState<ModalMode>(() =>
-    isDueForReview ? 'guess' : 'view'
+    context === 'library' ? 'view' : (isDueForReview ? 'guess' : 'view')
   );
   const [guess, setGuess] = useState('');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -55,8 +59,8 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
     setGuess('');
     setIsCorrect(null);
     setNewLevel(null);
-    setMode(isDueForReview ? 'guess' : 'view');
-  }, [isDueForReview]);
+    setMode(context === 'library' ? 'view' : (isDueForReview ? 'guess' : 'view'));
+  }, [isDueForReview, context]);
 
   React.useEffect(() => {
     if (visible) resetState();
@@ -116,6 +120,27 @@ export function WordModal({ userWord, isDueForReview, visible, onClose, onSubmit
                 </View>
                 <View style={styles.separator} />
                 <Text style={styles.bodyText}>E.g. {userWord.example_sentence}</Text>
+              </View>
+            )}
+
+            {/* Library actions — only in library context */}
+            {mode === 'view' && context === 'library' && (
+              <View style={styles.libraryActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
+                  onPress={() => { onStartLearning?.(userWord.word_id); onClose(); }}
+                >
+                  <Text style={styles.primaryButtonText}>Learn word</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryButtonPressed]}
+                  onPress={() => { onMarkAsLearned?.(userWord.word_id); onClose(); }}
+                >
+                  <Text style={styles.secondaryButtonText}>Mark as already learned</Text>
+                </Pressable>
+                <Pressable onPress={onShowAnother} hitSlop={8}>
+                  <Text style={styles.showAnotherText}>Show another word</Text>
+                </Pressable>
               </View>
             )}
 
@@ -193,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderWidth: 2,
     borderColor: Colors.outline,
-    shadowColor: '#000',
+    shadowColor: Colors.outline,
     shadowOffset: { width: 6, height: 8 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -265,5 +290,53 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 24,
     textAlign: 'center',
+  },
+  libraryActions: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: Spacing.m,
+  },
+  primaryButton: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    backgroundColor: Colors.accent,
+    borderWidth: 2,
+    borderColor: Colors.outline,
+  },
+  primaryButtonPressed: {
+    backgroundColor: Colors.accentHover,
+  },
+  primaryButtonText: {
+    fontFamily: FontFamily.loraMedium,
+    fontSize: FontSize.bodyLarge,
+    color: Colors.textInverted,
+  },
+  secondaryButton: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.s,
+    paddingHorizontal: Spacing.l,
+    backgroundColor: Colors.background,
+    borderWidth: 2,
+    borderColor: Colors.outline,
+  },
+  secondaryButtonPressed: {
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  secondaryButtonText: {
+    fontFamily: FontFamily.loraMedium,
+    fontSize: FontSize.bodyLarge,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  showAnotherText: {
+    fontFamily: FontFamily.loraRegular,
+    fontSize: FontSize.small,
+    color: Colors.textPrimary,
+    textDecorationLine: 'underline',
   },
 });
