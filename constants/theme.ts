@@ -54,16 +54,27 @@ export const Spacing = {
   xxs: 2,
   xs: 4,
   s: 8,
+  s10: 10,
+  s12: 12,
   m: 16,
   l: 24,
   xl: 32,
   xxl: 48,
-  xxxl: 64,
 };
 
 export const BorderRadius = {
+  xxs: 5,
   xs: 4,
-  s: 8,
   m: 16,
-  l: 24,
+  pill: 68,
+};
+
+// Letter spacing values in pixels (converted from Figma % of font size).
+// Only Medium-weight body styles and heading-3/4 have letter spacing.
+export const LetterSpacing = {
+  heading3: 1.0,   // 4.17% × 24px
+  heading4: 1.0,   // 5% × 20px
+  bodyMedium: 0.2, // 1.25% × 16px
+  smallMedium: 0.2, // 1.43% × 14px
+  captionMedium: 0.2, // 1.67% × 12px
 };
